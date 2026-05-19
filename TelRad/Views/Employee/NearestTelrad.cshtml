@@ -1,0 +1,482 @@
+﻿@model List<TelRad.Models.Employee>
+
+@{
+    ViewData["Title"] = "Nearest Telrad";
+}
+
+<h2 class="mb-4">Nearest Telrad Assignment</h2>
+
+<!-- FILTERS -->
+<div class="card p-4 mb-4">
+
+    <div class="row">
+
+        <!-- SEARCH -->
+        <div class="col-md-3 mb-3">
+
+            <label class="form-label">
+                Search Employee
+            </label>
+
+            <input type="text"
+                   id="searchFilter"
+                   class="form-control"
+                   placeholder="Search name..." />
+
+        </div>
+
+        <!-- BRANCH -->
+        <div class="col-md-3 mb-3">
+
+            <label class="form-label">
+                Branch
+            </label>
+
+            <select id="branchFilter"
+                    class="form-select">
+
+                <option value="">
+                    All Branches
+                </option>
+
+                <option value="Agoo">
+                    Agoo
+                </option>
+
+                <option value="Candon">
+                    Candon
+                </option>
+
+                <option value="RM">
+                    RM
+                </option>
+
+                <option value="Pasig">
+                    Pasig
+                </option>
+
+            </select>
+
+        </div>
+
+        <!-- DEPARTMENT -->
+        <div class="col-md-3 mb-3">
+
+            <label class="form-label">
+                Department
+            </label>
+
+            <select id="departmentFilter"
+                    class="form-select">
+
+                <option value="">
+                    All Departments
+                </option>
+
+            </select>
+
+        </div>
+
+        <!-- UNDER -->
+        <div class="col-md-3 mb-3"
+             id="subDepartmentContainer"
+             style="display:none;">
+
+            <label class="form-label">
+                Under
+            </label>
+
+            <select id="subDepartmentFilter"
+                    class="form-select">
+
+                <option value="">
+                    Under
+                </option>
+
+            </select>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- TABLE -->
+<div class="table-responsive">
+
+    <table class="table table-bordered table-striped">
+
+        <thead style="background:#17315e;
+                      color: white;">
+
+            <tr>
+
+                <th>
+                    Full Name
+                </th>
+
+                <th>
+                    Branch
+                </th>
+
+                <th>
+                    Department
+                </th>
+
+                <th>
+                    Assigned Telrad
+                </th>
+
+                <th>
+                    Nearest Telrad
+                </th>
+
+
+            </tr>
+
+        </thead>
+
+        <tbody id="employeeTableBody">
+
+            @foreach (var employee in Model)
+            {
+                <tr data-name="@employee.FullName"
+                    data-branch="@employee.Branch"
+                    data-department="@employee.Department">
+
+                    <td>
+                        @employee.FullName
+                    </td>
+
+                    <td>
+                        @employee.Branch
+                    </td>
+
+                    <td>
+                        @employee.Department
+                    </td>
+
+                    <td>
+                        @employee.AssignedTelrad
+                    </td>
+
+                    <td>
+                        @employee.NearestTelrad
+                    </td>
+                    <td colspan="2">
+
+                        <form asp-controller="Employee"
+                              asp-action="AssignNearestTelrad"
+                              method="post"
+                              class="d-flex gap-2">
+
+                            <input type="hidden"
+                                   name="id"
+                                   value="@employee.Id" />
+
+                            <input type="text"
+                                   name="nearestTelrad"
+                                   class="form-control"
+                                   value="@employee.NearestTelrad"
+                                   placeholder="Nearest Telrad" />
+
+                            <button type="submit"
+                                    class="btn btn-primary">
+
+                                Save
+
+                            </button>
+
+                        </form>
+
+                    </td>
+                </tr>
+            }
+
+        </tbody>
+
+    </table>
+
+</div>
+
+@section Scripts {
+
+<script>
+
+    const searchFilter =
+        document.getElementById('searchFilter');
+
+    const branchFilter =
+        document.getElementById('branchFilter');
+
+    const departmentFilter =
+        document.getElementById('departmentFilter');
+
+    const subDepartmentFilter =
+        document.getElementById('subDepartmentFilter');
+
+    const subDepartmentContainer =
+        document.getElementById('subDepartmentContainer');
+
+    const rows =
+        document.querySelectorAll('#employeeTableBody tr');
+
+              const departments = {
+
+                "Agoo": {
+                    "Operator": [],
+
+                    "EXECOM": [],
+
+                    "LEAF":[],
+
+                    "SALES": [
+                        "SAMPLE ROOM"
+                    ],
+
+                    "GROWING OPERATION": [
+                        "AGRONOMY",
+                        "SSDG"
+                    ],
+
+                    "FINANCE": [
+                        "ACCOUNTING",
+                        "HUMAN RESOURCES",
+                        "INFORMATION TECHNOLOGY",
+                        "BUYING LINE",
+                        "CLINIC",
+                        "CDF",
+                        "OPERATION ACCOUNTING",
+                        "LEAF ACCOUNTING",
+                        "TREASURY",
+                        "PROCUREMENT & SHIPPING",
+                        "LEGAL",
+                        "CORPORATE AFFAIRS"
+                    ],
+
+                    "INTERNAL OPERATIONS": [
+                        "BLENDING LINE",
+                        "QUALITY CONTROL",
+                        "ENGINEERING",
+                        "EHSS",
+                        "FINISHED GOODS",
+                        "PRODUCTION",
+                        "SCALEHOUSE",
+                        "TRAFFIC MANAGEMENT GROUP",
+                        "GREEN LEAF LOGISTIC",
+                        "BUYING LINE",
+                        "SAN JACINTO"
+                    ]
+                },
+
+                "Candon": {
+
+                    "EXECOM": [],
+
+                    "FINANCE": [
+                        "OPERATIONS ACCOUNTING",
+                        "INFORMATION TECHNOLOGY",
+                        "HUMAN RESOURCE",
+                        "TREASURY",
+                        "PROCUREMENT & SHIPPING"
+                    ],
+
+                    "INTERNAL OPERATIONS": [
+                        "GLLM",
+                        "GLLM & TMG CURRIMAO",
+                        "ACCOUNTING CURRIMAO",
+                        "TREASURY CURRIMAO",
+                        "ADMIN & LOGISTICS",
+                        "ENGINEERING",
+                        "GUARD"
+                    ],
+
+                    "GROWING OPERATIONS": [
+                        "MANAGERS",
+                        "RISK MANAGEMENT",
+                        "SSDG",
+                        "BUYING",
+                        "FRU",
+                        "RTF",
+                        "AGRONOMY",
+                        "FRA CURRIMAO",
+                        "STA CRUZ WAREHOUSE"
+                    ]
+                },
+
+                "RM": {
+
+                    "Operator": [],
+
+                    "FINANCE": [],
+
+                    "LEAF AND SALES": [
+                        "GENERAL ACCOUNTING",
+                        "LEAF ACCOUNTING",
+                        "OPERATIONS ACCOUNTING",
+                        "FILLING ROOM",
+                        "INFORMATION TECHNOLOGY",
+                        "TREASURY",
+                        "PROCUREMENT & SHIPPING",
+                        "LEGAL",
+                        "CORPORATE AFFAIRS",
+                        "PROJECT MANAGERS",
+                        "AGRONOMY",
+                        "TOBACCO WRAPPER",
+                        "SSDG",
+                        "COMPLIANCE",
+                        "FRA"
+                    ],
+
+                    "INTERNAL OPERATIONS": [
+                        "HUMAN RESOURCES",
+                        "HR",
+                        "EHSS",
+                        "TRAFFIC AND LOGISTICS",
+                        "CLINIC",
+                        "GUARD"
+                    ],
+
+                    "GROWING OPERATIONS": [
+                        "GO DIRECTOR R2",
+                        "AGRONOMY DIRECTOR",
+                        "RTF",
+                        "GUEST HOUSE"
+                    ]
+                },
+
+                "Pasig": {
+                    "Operator": [],
+
+                    "EXECOM": [],
+
+                    "FINANCE": [
+                        "CONFERENCE",
+                        "PROCUREMENT & SHIPPING",
+                        "TREASURY",
+                        "OTHERS",
+                        "PANTRY",
+                        "CORPORATE AFFAIRS"
+                    ]
+                }
+            };
+
+    // BRANCH CHANGE
+    branchFilter.addEventListener('change', function () {
+
+        const selectedBranch =
+            this.value;
+
+        departmentFilter.innerHTML =
+            '<option value="">All Departments</option>';
+
+        subDepartmentContainer.style.display =
+            'none';
+
+        if (departments[selectedBranch]) {
+
+            Object.keys(departments[selectedBranch])
+                .forEach(function (department) {
+
+                    const option =
+                        document.createElement('option');
+
+                    option.value =
+                        department;
+
+                    option.text =
+                        department;
+
+                    departmentFilter.appendChild(option);
+                });
+        }
+
+        filterTable();
+    });
+
+    // DEPARTMENT CHANGE
+    departmentFilter.addEventListener('change', function () {
+
+        const selectedBranch =
+            branchFilter.value;
+
+        const selectedDepartment =
+            this.value;
+
+        subDepartmentFilter.innerHTML =
+            '<option value="">Under</option>';
+
+        const subDepartments =
+            departments[selectedBranch]?.[selectedDepartment];
+
+        filterTable();
+    });
+
+    searchFilter.addEventListener(
+        'input',
+        filterTable
+    );
+
+    subDepartmentFilter.addEventListener(
+        'change',
+        filterTable
+    );
+
+    // FILTER TABLE
+    function filterTable() {
+
+        const searchValue =
+            searchFilter.value.toLowerCase();
+
+        const branchValue =
+            branchFilter.value;
+
+        const departmentValue =
+            departmentFilter.value;
+
+
+        rows.forEach(function (row) {
+
+            const name =
+                row.dataset.name.toLowerCase();
+
+            const branch =
+                row.dataset.branch;
+
+            const department =
+                row.dataset.department;
+
+            const subDepartment =
+                row.dataset.subdepartment;
+
+            const matchesSearch =
+                name.includes(searchValue);
+
+            const matchesBranch =
+                !branchValue ||
+                branch === branchValue;
+
+            const matchesDepartment =
+                !departmentValue ||
+                department.toUpperCase() === departmentValue.toUpperCase();
+
+
+            if (
+                matchesSearch &&
+                matchesBranch &&
+                matchesDepartment &&
+            ) {
+
+                row.style.display = '';
+
+            }
+            else {
+
+                row.style.display = 'none';
+            }
+        });
+    }
+
+</script>
+
+}    
