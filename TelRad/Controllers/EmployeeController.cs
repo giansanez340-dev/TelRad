@@ -81,7 +81,7 @@ namespace TelRad.Controllers
                 _context.SaveChanges();
             }
 
-            return RedirectToAction("NearestTelrad");
+            return RedirectToAction("Search");
         }
 
         [HttpPost]
@@ -95,7 +95,7 @@ namespace TelRad.Controllers
                 _context.SaveChanges();
             }
 
-            return RedirectToAction("NearestTelrad");
+            return RedirectToAction("Search");
         }
     }
 }
