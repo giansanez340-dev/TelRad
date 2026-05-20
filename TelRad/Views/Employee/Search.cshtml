@@ -82,41 +82,42 @@
                     </td>
 
                     <!-- ACTIONS COLUMN -->
-                    <td class="actions-column">
+                    @if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Admin"))
+                    {
+                        <td class="actions-column">
+                            <div class="d-flex gap-2 justify-content-end">
 
-                        <div class="d-flex gap-2 justify-content-end">
+                                <!-- EDIT BUTTON -->
+                                <button type="button" class="btn btn-warning edit-btn btn-sm">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
 
-                            <!-- EDIT BUTTON -->
-                            <button type="button" class="btn btn-warning edit-btn btn-sm">
-                                <i class="bi bi-pencil"></i>
-                            </button>
+                                <!-- SAVE FORM -->
+                                <form asp-controller="Employee"
+                                      asp-action="UpdateEmployee"
+                                      method="post" class="d-none save-form">
+                                    <input type="hidden" name="Id" value="@employee.Id" />
+                                    <input type="hidden" name="FullName" class="form-control edit-input" value="@employee.FullName" />
+                                    <input type="hidden" name="Branch" class="form-control edit-input" value="@employee.Branch" />
+                                    <input type="hidden" name="Department" class="form-control edit-input" value="@employee.Department" />
+                                    <input type="hidden" name="AssignedTelrad" class="form-control edit-input" value="@employee.AssignedTelrad" />
+                                    <input type="hidden" name="NearestTelrad" class="form-control edit-input" value="@employee.NearestTelrad" />
+                                    <button type="submit" class="btn btn-success btn-sm">Save</button>
+                                </form>
 
-                            <!-- SAVE FORM -->
-                            <form asp-controller="Employee"
-                                  asp-action="UpdateEmployee"
-                                  method="post" class="d-none save-form">
-                                <input type="hidden" name="Id" value="@employee.Id" />
-                                <input type="hidden" name="FullName" class="form-control edit-input" value="@employee.FullName" />
-                                <input type="hidden" name="Branch" class="form-control edit-input" value="@employee.Branch" />
-                                <input type="hidden" name="Department" class="form-control edit-input" value="@employee.Department" />
-                                <input type="hidden" name="AssignedTelrad" class="form-control edit-input" value="@employee.AssignedTelrad" />
-                                <input type="hidden" name="NearestTelrad" class="form-control edit-input" value="@employee.NearestTelrad" />
-                                <button type="submit" class="btn btn-success btn-sm">Save</button>
-                            </form>
+                                <!-- DELETE FORM -->
+                                <form asp-controller="Employee"
+                                      asp-action="DeleteEmployee"
+                                      method="post"
+                                      class="d-none delete-form"
+                                      onsubmit="return confirm('Delete this employee?');">
+                                    <input type="hidden" name="Id" value="@employee.Id" />
+                                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                </form>
 
-                            <!-- DELETE FORM -->
-                            <form asp-controller="Employee"
-                                  asp-action="DeleteEmployee"
-                                  method="post"
-                                  class="d-none delete-form"
-                                  onsubmit="return confirm('Delete this employee?');">
-                                <input type="hidden" name="Id" value="@employee.Id" />
-                                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-                            </form>
-
-                        </div>
-
-                    </td>
+                            </div>
+                        </td>
+                    }
 
                 </tr>
             }
@@ -190,5 +191,7 @@
                 this.classList.add('d-none');
             });
         });
+
+
     </script>
 }

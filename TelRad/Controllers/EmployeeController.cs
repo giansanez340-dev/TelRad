@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using TelRad.Data;
 using TelRad.Models;
 
 namespace TelRad.Controllers
 {
+    [Authorize]
     public class EmployeeController : Controller
     {
         private readonly AppDbContext _context;
@@ -13,9 +15,12 @@ namespace TelRad.Controllers
             _context = context;
         }
 
+        [AllowAnonymous]
         public IActionResult Search()
         {
             var employees = _context.Employees.ToList();
+            bool isAdmin = User.Identity != null && User.IsInRole("Admin");
+            ViewData["IsAdmin"] = isAdmin;
 
             return View(employees);
         }
@@ -37,6 +42,7 @@ namespace TelRad.Controllers
                     (!string.IsNullOrEmpty(e.FullName) &&
                      e.FullName.Trim().ToLower() == keyword.Trim().ToLower())
                 );
+
 
             if (employee == null)
             {

@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using TelRad.Data;
+using TelRad.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,9 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.AccessDeniedPath = "/Admin/Login";
         options.ExpireTimeSpan = TimeSpan.FromHours(1);
     });
+
+builder.Services.Configure<AdminCredentials>(
+    builder.Configuration.GetSection("AdminCredentials"));
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(
