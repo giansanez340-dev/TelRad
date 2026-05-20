@@ -35,7 +35,10 @@ namespace TelRad.Controllers
             }
 
             var employee = _context.Employees
-                .FirstOrDefault(e => e.FullName.Trim().ToLower() == keyword.Trim().ToLower());
+                .FirstOrDefault(e =>
+                    (!string.IsNullOrEmpty(e.FullName) &&
+                     e.FullName.Trim().ToLower() == keyword.Trim().ToLower())
+                );
 
             if (employee == null)
             {
@@ -91,6 +94,25 @@ namespace TelRad.Controllers
             }
 
             return RedirectToAction("Search");
+        }
+
+        [HttpPost]
+        public IActionResult UpdateEmployee([FromBody] Employee model)
+        {
+            var emp = _context.Employees.FirstOrDefault(e => e.Id == model.Id);
+
+            if (emp != null)
+            {
+                emp.FullName = model.FullName;
+                emp.Branch = model.Branch;
+                emp.Department = model.Department;
+                emp.AssignedTelrad = model.AssignedTelrad;
+                emp.NearestTelrad = model.NearestTelrad;
+
+                _context.SaveChanges();
+            }
+
+            return Json(new { success = true });
         }
     }
 }
