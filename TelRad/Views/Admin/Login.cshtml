@@ -1,0 +1,48 @@
+@model LoginViewModel
+
+@{
+    ViewData["Title"] = "Admin Login";
+}
+
+<div class="container d-flex justify-content-center align-items-center" style="height: 100vh;">
+    <div class="col-md-5">
+        <div class="card shadow">
+            <div class="card-body p-5">
+                <h3 class="text-center mb-4">Admin Login</h3>
+
+                @if (!ViewData.ModelState.IsValid && ViewData.ModelState.Values.Any(v => v.Errors.Count > 0))
+                {
+                    <div class="alert alert-danger" role="alert">
+                        @Html.ValidationSummary(true)
+                    </div>
+                }
+
+                <form method="post">
+                    <div class="mb-3">
+                        <label for="Username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="Username" name="Username"
+                               asp-for="Username" required autofocus>
+                        <span class="text-danger">@Html.ValidationMessageFor(m => m.Username)</span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="Password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="Password" name="Password"
+                               asp-for="Password" required>
+                        <span class="text-danger">@Html.ValidationMessageFor(m => m.Password)</span>
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="RememberMe"
+                               asp-for="RememberMe">
+                        <label class="form-check-label" for="RememberMe">
+                            Remember me
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">Login</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
