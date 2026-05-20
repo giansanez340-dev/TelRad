@@ -12,5 +12,6 @@ namespace TelRad.Data
         public DbSet<Employee> Employees { get; set; } = null!;
 
         public DbSet<Telrad> Telrads { get; set; } = null!;
+        public DbSet<AdminCredentials> Admins { get; set; } = null!;
     }
 }

@@ -46,18 +46,40 @@
 
                     <ul class="navbar-nav ms-auto">
 
+                        <!-- HOME (always visible) -->
                         <li class="nav-item">
-
                             <a class="nav-link"
                                asp-area=""
                                asp-controller="Employee"
                                asp-action="Search">
-
                                 Home
-
                             </a>
-
                         </li>
+
+                        @if (User.Identity != null && User.Identity.IsAuthenticated)
+                        {
+                            <!-- LOGGED IN (ADMIN) -->
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                   asp-area=""
+                                   asp-controller="Admin"
+                                   asp-action="Logout">
+                                    Logout
+                                </a>
+                            </li>
+                        }
+                        else
+                        {
+                            <!-- NOT LOGGED IN (GUEST) -->
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                   asp-area=""
+                                   asp-controller="Admin"
+                                   asp-action="Login">
+                                    Login
+                                </a>
+                            </li>
+                        }
 
                     </ul>
 
