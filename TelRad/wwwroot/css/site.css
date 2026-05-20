@@ -121,16 +121,25 @@ body {
         top: 8px;
     }
 
-/* Table row hover effect */
-tbody tr {
-    transition: background 0.2s ease-in-out;
+/* Remove all table borders */
+table.table-hover,
+table.table-hover th,
+table.table-hover td {
+    border: none !important; /* Removes default gridlines */
 }
 
-    tbody tr:hover {
-        background-color: #f5f8ff;
+    /* Optional: remove padding/borders from the last column (actions) */
+    table.table-hover td:last-child,
+    table.table-hover th:last-child {
+        border: none !important;
     }
 
-/* Cell text & edit input */
+/* Keep row hover effect for visual cue */
+tbody tr:hover {
+    background-color: #f5f8ff;
+}
+
+/* Cell text & edit input remain the same */
 .cell-text {
     display: inline-block;
     padding: 4px 6px;
@@ -151,7 +160,7 @@ tbody tr {
 
 /* Edit button */
 .edit-btn {
-    opacity: 0;
+    opacity: 1;
     background: #17315e;
     color: white;
     border: none;
@@ -159,14 +168,19 @@ tbody tr {
     pointer-events: auto;
 }
 
+    .edit-btn:hover {
+        opacity: 0;
+        background: white !important;
+        color: #17315e!important;
+        border: none;
+        transition: opacity 0.2s ease, background 0.2s ease;
+        pointer-events: auto;
+    }
+
 tr:hover .edit-btn {
     opacity: 1;
 }
 
-.edit-btn:hover {
-    background: #0d6efd; /* custom hover color */
-    color: white;
-}
 
 .edit-btn:focus,
 .edit-btn:active {
@@ -174,12 +188,28 @@ tr:hover .edit-btn {
     box-shadow: none !important;
 }
 
-/* Remove borders for last column (actions) */
-td.actions-column,
-th.actions-column {
-    border: none !important;
-    outline: none;
+.actions-column {
     text-align: right;
     white-space: nowrap;
-    padding-right: 12px;
 }
+
+/* Keep row hover effect for visual cue */
+tbody tr:hover {
+    background-color: #f5f8ff;
+}
+
+table.table th,
+table.table td {
+    text-align: center; /* horizontal center */
+    vertical-align: middle; /* vertical center */
+}
+
+    table.table td:first-child {
+        text-align: left;
+    }
+
+/* Optional: keep last column buttons aligned right */
+td.actions-column {
+    text-align: right; /* only last column remains right-aligned */
+}
+

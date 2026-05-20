@@ -55,20 +55,6 @@ namespace TelRad.Controllers
             return View("Result", vm);
         }
 
-        public IActionResult AllEmployees()
-        {
-            var employees = _context.Employees.ToList();
-
-            return View(employees);
-        }
-
-        public IActionResult NearestTelrad()
-        {
-            var employees = _context.Employees.ToList();
-
-            return View(employees);
-        }
-
         [HttpPost]
         public IActionResult AssignNearestTelrad(int id, string nearestTelrad)
         {
