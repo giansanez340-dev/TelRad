@@ -97,5 +97,34 @@ namespace TelRad.Controllers
 
             return RedirectToAction("Search");
         }
+
+        [HttpPost]
+        public IActionResult UpdateEmployee(Employee employee)
+        {
+            var existingEmployee =
+                _context.Employees.Find(employee.Id);
+
+            if (existingEmployee != null)
+            {
+                existingEmployee.FullName =
+                    employee.FullName;
+
+                existingEmployee.Branch =
+                    employee.Branch;
+
+                existingEmployee.Department =
+                    employee.Department;
+
+                existingEmployee.AssignedTelrad =
+                    employee.AssignedTelrad;
+
+                existingEmployee.NearestTelrad =
+                    employee.NearestTelrad;
+
+                _context.SaveChanges();
+            }
+
+            return RedirectToAction("Search");
+        }
     }
 }

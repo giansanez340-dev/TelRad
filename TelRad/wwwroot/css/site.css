@@ -2,21 +2,14 @@ html {
     font-size: 14px;
     overflow-y: scroll;
     font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    position: relative;
+    min-height: 100%;
 }
 
 @media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
+    html {
+        font-size: 16px;
+    }
 }
 
 body {
@@ -25,15 +18,15 @@ body {
 }
 
 .custom-navbar,
-.custom-footer{
+.custom-footer {
     background: #17315e;
     color: white;
-    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; 
+    font-family: 'Lucida Sans', sans-serif;
 }
 
 .navbar-nav .nav-link {
     color: white;
-    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    font-family: 'Lucida Sans', sans-serif;
     border: 2px solid transparent;
     border-radius: 8px;
     padding: 8px 16px;
@@ -41,19 +34,19 @@ body {
     margin-left: 5px;
 }
 
-.btn {
-    background: #17315e;
-    color: white;
-    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
-    border: none;
-    transition: all 0.3s ease;
-}
+    .navbar-nav .nav-link:hover {
+        border-color: transparent;
+        background-color: #f5f8ff;
+        color: #17315e !important;
+    }
 
+.btn,
 .btn-primary,
 .btn-secondary {
-    background-color: #17315e !important;
-    border-color: #17315e !important;
+    background: #17315e !important;
     color: white !important;
+    border: none !important;
+    font-family: 'Lucida Sans', sans-serif;
     transition: all 0.3s ease;
 }
 
@@ -63,11 +56,14 @@ body {
         border-color: #17315e !important;
         color: #17315e !important;
     }
-.navbar-nav .nav-link:hover {
-    border-color: transparent;
-    background-color: #f5f8ff;
-    color: #17315e !important;
-}
+
+    .btn:focus,
+    .btn:active:focus,
+    .btn-link.nav-link:focus,
+    .form-control:focus,
+    .form-check-input:focus {
+        box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+    }
 
 #employeeDropdown {
     width: 100%;
@@ -125,4 +121,65 @@ body {
         top: 8px;
     }
 
+/* Table row hover effect */
+tbody tr {
+    transition: background 0.2s ease-in-out;
+}
 
+    tbody tr:hover {
+        background-color: #f5f8ff;
+    }
+
+/* Cell text & edit input */
+.cell-text {
+    display: inline-block;
+    padding: 4px 6px;
+}
+
+.edit-input {
+    display: none;
+    width: 100%;
+}
+
+.editing .cell-text {
+    display: none;
+}
+
+.editing .edit-input {
+    display: block;
+}
+
+/* Edit button */
+.edit-btn {
+    opacity: 0;
+    background: #17315e;
+    color: white;
+    border: none;
+    transition: opacity 0.2s ease, background 0.2s ease;
+    pointer-events: auto;
+}
+
+tr:hover .edit-btn {
+    opacity: 1;
+}
+
+.edit-btn:hover {
+    background: #0d6efd; /* custom hover color */
+    color: white;
+}
+
+.edit-btn:focus,
+.edit-btn:active {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Remove borders for last column (actions) */
+td.actions-column,
+th.actions-column {
+    border: none !important;
+    outline: none;
+    text-align: right;
+    white-space: nowrap;
+    padding-right: 12px;
+}
