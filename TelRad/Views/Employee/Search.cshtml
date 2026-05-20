@@ -164,9 +164,8 @@
     const branchFilter = document.getElementById('branchFilter');
     const departmentFilter = document.getElementById('departmentFilter');
     const departmentList = document.getElementById('departmentList');
-    const rows = document.querySelectorAll('#employeeTableBody tr');
-
     const menu = document.getElementById("rowActionMenu");
+
     let selectedRow = null;
 
     // ================= DEPARTMENTS =================
@@ -180,15 +179,17 @@
     // ================= FILTER FUNCTION =================
     function filterTable() {
 
-        const searchValue = searchFilter.value.toLowerCase();
-        const branchValue = branchFilter.value.toLowerCase();
-        const departmentValue = departmentFilter.value.toLowerCase();
+        const searchValue = (searchFilter.value || "").toLowerCase();
+        const branchValue = (branchFilter.value || "").toLowerCase();
+        const departmentValue = (departmentFilter.value || "").toLowerCase();
+
+        const rows = document.querySelectorAll('#employeeTableBody tr');
 
         rows.forEach(row => {
 
-            const name = row.dataset.name.toLowerCase();
-            const branch = row.dataset.branch.toLowerCase();
-            const department = row.dataset.department.toLowerCase();
+            const name = (row.dataset.name || "").toLowerCase();
+            const branch = (row.dataset.branch || "").toLowerCase();
+            const department = (row.dataset.department || "").toLowerCase();
 
             const matchSearch = name.includes(searchValue);
             const matchBranch = !branchValue || branch.includes(branchValue);
@@ -201,13 +202,17 @@
 
     // ================= FILTER EVENTS =================
     searchFilter.addEventListener('input', filterTable);
+    departmentFilter.addEventListener('input', filterTable);
+
     branchFilter.addEventListener('input', function () {
 
-        // update department list
+        const value = this.value;
+
+        // update department dropdown
         departmentList.innerHTML = '';
 
-        if (departments[this.value]) {
-            departments[this.value].forEach(d => {
+        if (departments[value]) {
+            departments[value].forEach(d => {
                 const opt = document.createElement('option');
                 opt.value = d;
                 departmentList.appendChild(opt);
@@ -217,68 +222,66 @@
         filterTable();
     });
 
-    departmentFilter.addEventListener('input', filterTable);
+    // ================= ROW CLICK MENU (DELEGATION FIXED) =================
+    document.getElementById('employeeTableBody').addEventListener('click', function (e) {
 
-    // ================= ROW ACTION MENU =================
-    document.querySelectorAll("#employeeTableBody tr").forEach(row => {
-        row.addEventListener("click", function () {
+        const row = e.target.closest("tr");
 
-            selectedRow = this;
+        if (!row) return;
 
-            const rect = this.getBoundingClientRect();
+        selectedRow = row;
 
-            menu.style.top = (rect.top + window.scrollY - 45) + "px";
-            menu.style.left = (rect.left + window.scrollX + rect.width / 2) + "px";
+        const rect = row.getBoundingClientRect();
 
-            menu.classList.remove("d-none");
-        });
+        menu.style.top = (rect.top + window.scrollY - 45) + "px";
+        menu.style.left = (rect.left + window.scrollX + rect.width / 2) + "px";
+
+        menu.classList.remove("d-none");
     });
 
     // hide menu when clicking outside
     document.addEventListener("click", function (e) {
-        if (!menu.contains(e.target) && !e.target.closest("tr")) {
+        if (!menu.contains(e.target) && !e.target.closest("#employeeTableBody tr")) {
             menu.classList.add("d-none");
         }
     });
 
     // ================= EDIT BUTTON =================
-    document.querySelectorAll('.edit-btn').forEach(btn => {
-        btn.addEventListener('click', function () {
+    document.addEventListener('click', function (e) {
 
-            const mainRow = this.closest('tr');
+        if (e.target.classList.contains('edit-btn')) {
+
+            const mainRow = e.target.closest('tr');
             const id = mainRow.dataset.id;
             const editRow = document.getElementById('edit-' + id);
 
-            editRow.classList.remove('d-none');
-        });
-    });
+            if (editRow) {
+                editRow.classList.remove('d-none');
+            }
+        }
 
-    // ================= CANCEL BUTTON =================
-    document.querySelectorAll('.cancel-btn').forEach(btn => {
-        btn.addEventListener('click', function () {
+        // ================= CANCEL BUTTON =================
+        if (e.target.classList.contains('cancel-btn')) {
 
-            const editRow = this.closest('.edit-row');
+            const editRow = e.target.closest('.edit-row');
             editRow.classList.add('d-none');
-        });
-    });
+        }
 
-    // ================= SAVE BUTTON =================
-    document.querySelectorAll('.save-btn').forEach(btn => {
+        // ================= SAVE BUTTON =================
+        if (e.target.classList.contains('save-btn')) {
 
-        btn.addEventListener('click', function () {
-
-            const editRow = this.closest('.edit-row');
+            const editRow = e.target.closest('.edit-row');
             const mainRow = editRow.previousElementSibling;
 
             const id = mainRow.dataset.id;
 
             const data = {
                 Id: id,
-                FullName: editRow.querySelector('.fullName').value,
-                Branch: editRow.querySelector('.branch').value,
-                Department: editRow.querySelector('.department').value,
-                AssignedTelrad: editRow.querySelector('.assigned').value,
-                NearestTelrad: editRow.querySelector('.nearest').value
+                FullName: editRow.querySelector('.fullName')?.value || "",
+                Branch: editRow.querySelector('.branch')?.value || "",
+                Department: editRow.querySelector('.department')?.value || "",
+                AssignedTelrad: editRow.querySelector('.assigned')?.value || "",
+                NearestTelrad: editRow.querySelector('.nearest')?.value || ""
             };
 
             fetch('/Employee/UpdateEmployee', {
@@ -292,7 +295,7 @@
             .then(() => {
                 location.reload();
             });
-        });
+        }
     });
 
 </script>
