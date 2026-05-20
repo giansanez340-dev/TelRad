@@ -91,32 +91,40 @@ namespace TelRad.Controllers
         }
 
         [HttpPost]
-        public IActionResult UpdateEmployee(Employee employee)
+        public IActionResult UpdateEmployee(Employee model)
         {
-            var existingEmployee =
-                _context.Employees.Find(employee.Id);
-
-            if (existingEmployee != null)
+            var employee = _context.Employees.FirstOrDefault(e => e.Id == model.Id);
+            if (employee != null)
             {
-                existingEmployee.FullName =
-                    employee.FullName;
-
-                existingEmployee.Branch =
-                    employee.Branch;
-
-                existingEmployee.Department =
-                    employee.Department;
-
-                existingEmployee.AssignedTelrad =
-                    employee.AssignedTelrad;
-
-                existingEmployee.NearestTelrad =
-                    employee.NearestTelrad;
+                employee.FullName = model.FullName;
+                employee.Branch = model.Branch;
+                employee.Department = model.Department;
+                employee.AssignedTelrad = model.AssignedTelrad;
+                employee.NearestTelrad = model.NearestTelrad;
+                employee.IsMainHandler = model.IsMainHandler; // now it will be true if checkbox checked
 
                 _context.SaveChanges();
             }
 
             return RedirectToAction("Search");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult UpdateMainHandler([FromBody] MainHandlerUpdateModel model)
+        {
+            // Unset all employees for this AssignedTelrad
+            var employees = _context.Employees
+                                    .Where(e => e.AssignedTelrad == model.AssignedTelrad)
+                                    .ToList();
+
+            foreach (var emp in employees)
+            {
+                emp.IsMainHandler = emp.Id == model.EmployeeId ? model.IsMainHandler : false;
+            }
+
+            _context.SaveChanges();
+            return Ok();
         }
     }
 }

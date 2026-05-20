@@ -204,10 +204,6 @@ table.table td {
     vertical-align: middle; /* vertical center */
 }
 
-    table.table td:first-child {
-        text-align: left;
-    }
-
 /* Optional: keep last column buttons aligned right */
 td.actions-column {
     text-align: right; /* only last column remains right-aligned */

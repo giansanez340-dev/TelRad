@@ -7,13 +7,13 @@
 <link rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-<h2 class="mb-4">Nearest Telrad Assignment</h2>
+<h2 class="mb-4">Nearest Telrad</h2>
 
 <!-- FILTERS -->
 <div class="card p-4 mb-4">
     <div class="row">
         <div class="col-md-4 mb-3">
-            <label>Search Employee</label>
+            <label>Search Employee or Telrad Number</label>
             <input type="text" id="searchFilter" class="form-control" />
         </div>
 
@@ -31,7 +31,7 @@
         <div class="col-md-4 mb-3">
             <label>Department</label>
             <input type="text" id="departmentFilter" class="form-control" list="departmentList" />
-            <datalist id="departmentList"></datalist>
+            <datal  ist id="departmentList"></datal>
         </div>
     </div>
 </div>
@@ -41,7 +41,11 @@
     <table class="table table-hover align-middle">
         <thead style="background:#17315e; color:white; align-items: center;">
             <tr>
-                <th>Full Name</th>
+                @if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Admin"))
+                {
+                    <th style="width: 50px; text-align: center;">Main</th>
+                }
+                <th class="text-start" style="text-align: left;">Full Name</th>
                 <th>Branch</th>
                 <th>Department</th>
                 <th>Assigned Telrad</th>
@@ -54,9 +58,29 @@
 
             @foreach (var employee in Model)
             {
-                <tr data-name="@employee.FullName" data-branch="@employee.Branch" data-department="@employee.Department">
+                <tr data-name="@employee.FullName"
+                    data-branch="@employee.Branch"
+                    data-department="@employee.Department"
+                    data-assignedtelrad="@employee.AssignedTelrad"
+                    data-mainhandler="@(employee.IsMainHandler ? "true" : "false")">
 
-                    <td>
+                    @if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Admin"))
+                    {
+                        <td>
+                            <input type="checkbox"
+                                   class="main-handler-checkbox"
+                                   data-telrad="@employee.AssignedTelrad"
+                                   data-employeeid="@employee.Id"
+                                   @(employee.IsMainHandler ? "checked" : "")
+                                   disabled />
+
+                            <input type="hidden"
+                                   name="IsMainHandler"
+                                   class="main-handler-hidden"
+                                   data-mainhandler="@(employee.IsMainHandler ? "true" : "false")">
+                        </td>
+                    }
+                    <td class="text-start">
                         <span class="cell-text">@employee.FullName</span>
                         <input class="form-control edit-input" name="FullName" value="@employee.FullName" />
                     </td>
@@ -93,10 +117,9 @@
                                 </button>
 
                                 <!-- SAVE FORM -->
-                                <form asp-controller="Employee"
-                                      asp-action="UpdateEmployee"
-                                      method="post" class="d-none save-form">
+                                <form asp-controller="Employee" asp-action="UpdateEmployee" method="post" class="d-none save-form">
                                     <input type="hidden" name="Id" value="@employee.Id" />
+                                    <input type="hidden" name="IsMainHandler" class="main-handler-hidden" value="@employee.IsMainHandler" />
                                     <input type="hidden" name="FullName" class="form-control edit-input" value="@employee.FullName" />
                                     <input type="hidden" name="Branch" class="form-control edit-input" value="@employee.Branch" />
                                     <input type="hidden" name="Department" class="form-control edit-input" value="@employee.Department" />
@@ -128,7 +151,7 @@
 
 @section Scripts {
     <script>
-        const searchFilter = document.getElementById('searchFilter');
+                const searchFilter = document.getElementById('searchFilter');
         const branchFilter = document.getElementById('branchFilter');
         const departmentFilter = document.getElementById('departmentFilter');
         const departmentList = document.getElementById('departmentList');
@@ -136,13 +159,44 @@
         const rows = document.querySelectorAll('#employeeTableBody tr');
 
         const departments = {
-            "Agoo": ["Operator", "EXECOM", "LEAF", "AGRONOMY"],
-            "Candon": ["EXECOM", "ENGINEERING", "HR"],
-            "RM": ["ACCOUNTING", "IT", "HR"],
-            "Pasig": ["EXECOM", "TREASURY", "CORPORATE AFFAIRS"]
+            "Agoo": ["Operator","EXECOM","LEAF","SAMPLE ROOM","AGRONOMY","SSDG","ACCOUNTING","HUMAN RESOURCES","INFORMATION TECHNOLOGY","BUYING LINE","CLINIC","CDF","OPERATION ACCOUNTING","LEAF ACCOUNTING","TREASURY","PROCUREMENT & SHIPPING","LEGAL","CORPORATE AFFAIRS","BLENDING LINE","QUALITY CONTROL","ENGINEERING","EHSS","FINISHED GOODS","PRODUCTION","SCALEHOUSE","TRAFFIC MANAGEMENT GROUP","GREEN LEAF LOGISTIC","SAN JACINTO"],
+            "Candon": ["EXECOM","OPERATIONS ACCOUNTING","INFORMATION TECHNOLOGY","HUMAN RESOURCE","TREASURY","PROCUREMENT & SHIPPING","GLLM","GLLM & TMG CURRIMAO","ACCOUNTING CURRIMAO","TREASURY CURRIMAO","ADMIN & LOGISTICS","ENGINEERING","GUARD","MANAGERS","RISK MANAGEMENT","SSDG","BUYING","FRU","RTF","AGRONOMY","FRA CURRIMAO","STA CRUZ WAREHOUSE"],
+            "RM": ["Operator","GENERAL ACCOUNTING","LEAF ACCOUNTING","OPERATIONS ACCOUNTING","FILLING ROOM","INFORMATION TECHNOLOGY","TREASURY","PROCUREMENT & SHIPPING","LEGAL","CORPORATE AFFAIRS","PROJECT MANAGERS","AGRONOMY","TOBACCO WRAPPER","SSDG","COMPLIANCE","FRA","HUMAN RESOURCES","HR","EHSS","TRAFFIC AND LOGISTICS","CLINIC","GUARD","GO DIRECTOR R2","AGRONOMY DIRECTOR","RTF","GUEST HOUSE"],
+            "Pasig": ["Operator","EXECOM","CONFERENCE","PROCUREMENT & SHIPPING","TREASURY","OTHERS","PANTRY","CORPORATE AFFAIRS"]
         };
 
-        branchFilter.addEventListener('input', function () {
+        // FILTERING
+        function filterTable() {
+            const search = searchFilter.value.toLowerCase();
+            const branch = branchFilter.value.toLowerCase();
+            const dept = departmentFilter.value.toLowerCase();
+
+            rows.forEach(row => {
+                const name = row.dataset.name.toLowerCase();
+                const rBranch = row.dataset.branch.toLowerCase();
+                const rDept = row.dataset.department.toLowerCase();
+                const assignedTelrad = row.dataset.assignedtelrad.toLowerCase();
+                const isMainHandler = row.dataset.mainhandler === "true";
+
+                let match;
+
+                if (search && assignedTelrad.includes(search)) {
+                    // If searching by Telrad number, only show main handler
+                    match = isMainHandler;
+                } else {
+                    // Regular filtering
+                    match =
+                        (name.includes(search) || assignedTelrad.includes(search)) &&
+                        (!branch || rBranch.includes(branch)) &&
+                        (!dept || rDept.includes(dept));
+                }
+
+                row.style.display = match ? '' : 'none';
+            });
+        }
+
+        searchFilter.addEventListener('input', filterTable);
+        branchFilter.addEventListener('input', function() {
             const value = this.value;
             departmentList.innerHTML = '';
             if (departments[value]) {
@@ -154,29 +208,9 @@
             }
             filterTable();
         });
-
-        searchFilter.addEventListener('input', filterTable);
-        branchFilter.addEventListener('input', filterTable);
         departmentFilter.addEventListener('input', filterTable);
 
-        function filterTable() {
-            const search = searchFilter.value.toLowerCase();
-            const branch = branchFilter.value.toLowerCase();
-            const dept = departmentFilter.value.toLowerCase();
-
-            rows.forEach(row => {
-                const name = row.dataset.name.toLowerCase();
-                const rBranch = row.dataset.branch.toLowerCase();
-                const rDept = row.dataset.department.toLowerCase();
-
-                const match = name.includes(search) &&
-                              (!branch || rBranch.includes(branch)) &&
-                              (!dept || rDept.includes(dept));
-
-                row.style.display = match ? '' : 'none';
-            });
-        }
-
+        // EDIT BUTTON
         document.querySelectorAll('.edit-btn').forEach(btn => {
             btn.addEventListener('click', function () {
                 const row = this.closest('tr');
@@ -184,14 +218,74 @@
 
                 const saveForm = row.querySelector('.save-form');
                 const deleteForm = row.querySelector('.delete-form');
+                const checkbox = row.querySelector('.main-handler-checkbox');
 
                 saveForm.classList.remove('d-none');
                 deleteForm.classList.remove('d-none');
 
-                this.classList.add('d-none');
+                if (checkbox) {
+                    checkbox.disabled = false;
+                    checkbox.style.cursor = "pointer";
+                }
+
+                this.classList.add('d-none'); // hide edit button
             });
         });
 
+        // SAVE FORM SUBMIT
+        document.querySelectorAll('.save-form').forEach(form => {
+            form.addEventListener('submit', function () {
+                const row = this.closest('tr');
+                const checkbox = row.querySelector('.main-handler-checkbox');
+                const hiddenInput = this.querySelector('.main-handler-hidden');
 
+                if (checkbox && hiddenInput) {
+                    hiddenInput.value = checkbox.checked.toString(); // sync checkbox
+                }
+
+                row.querySelectorAll('input.edit-input').forEach(input => {
+                    const hidden = this.querySelector(`input[name="${input.name}"]`);
+                    if (hidden) hidden.value = input.value;
+                });
+            });
+        });
+
+        // MAIN HANDLER CHECKBOX CHANGE
+        document.querySelectorAll('.main-handler-checkbox').forEach(cb => {
+            cb.addEventListener('change', function () {
+                if (this.disabled) return;
+
+                const telrad = this.dataset.telrad;
+                const employeeId = this.dataset.employeeid;
+
+                // uncheck other checkboxes for same Telrad
+                document.querySelectorAll(`.main-handler-checkbox[data-telrad="${telrad}"]`).forEach(other => {
+                    if (other !== this) {
+                        other.checked = false;
+                        const hidden = other.closest('tr').querySelector('.main-handler-hidden');
+                        if (hidden) hidden.value = "false";
+                    }
+                });
+
+                // AJAX to update server immediately
+                fetch('/Employee/UpdateMainHandler', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: JSON.stringify({
+                        EmployeeId: employeeId,
+                        IsMainHandler: this.checked,
+                        AssignedTelrad: telrad
+                    })
+                }).then(resp => {
+                    if (!resp.ok) alert('Failed to update main handler');
+                }).catch(err => {
+                    console.error(err);
+                    alert('Error updating main handler');
+                });
+            });
+        });
     </script>
 }

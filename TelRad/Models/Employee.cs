@@ -19,5 +19,7 @@ namespace TelRad.Models
         public string? AssignedTelrad { get; set; } = "";
 
         public string? NearestTelrad { get; set; } = "";
+
+        public bool IsMainHandler { get; set; } = false;
     }
 }

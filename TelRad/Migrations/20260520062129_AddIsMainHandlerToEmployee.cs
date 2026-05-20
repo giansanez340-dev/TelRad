@@ -5,11 +5,34 @@
 namespace TelRad.Migrations
 {
     /// <inheritdoc />
-    public partial class RemoveEmployeeNumber : Migration
+    public partial class AddIsMainHandlerToEmployee : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+
+            migrationBuilder.AlterColumn<string>(
+                name: "NearestTelrad",
+                table: "Employees",
+                type: "nvarchar(max)",
+                nullable: true,
+                oldClrType: typeof(string),
+                oldType: "nvarchar(max)");
+
+            migrationBuilder.AddColumn<bool>(
+                name: "IsMainHandler",
+                table: "Employees",
+                type: "bit",
+                nullable: false,
+                defaultValue: false);
+        }
+
+        /// <inheritdoc />
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropColumn(
+                name: "IsMainHandler",
+                table: "Employees");
 
             migrationBuilder.AlterColumn<string>(
                 name: "NearestTelrad",
@@ -20,21 +43,9 @@ namespace TelRad.Migrations
                 oldClrType: typeof(string),
                 oldType: "nvarchar(max)",
                 oldNullable: true);
-        }
-
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.AlterColumn<string>(
-                name: "NearestTelrad",
-                table: "Employees",
-                type: "nvarchar(max)",
-                nullable: true,
-                oldClrType: typeof(string),
-                oldType: "nvarchar(max)");
 
             migrationBuilder.AddColumn<string>(
-                name: "EmployeeNumber",
+                name: "SubDepartment",
                 table: "Employees",
                 type: "nvarchar(max)",
                 nullable: true);
