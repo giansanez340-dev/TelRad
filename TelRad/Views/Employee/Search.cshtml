@@ -137,6 +137,8 @@
                         <div class="d-flex gap-2">
 
                             <!-- UPDATE FORM -->
+                            @if (User.IsInRole("Admin"))
+                            {
                             <form asp-controller="Employee"
                                   asp-action="AssignNearestTelrad"
                                   method="post"
@@ -167,8 +169,11 @@
                                 </button>
 
                             </form>
+                            }
 
                             <!-- DELETE FORM -->
+                            @if (User.IsInRole("Admin"))
+                            {
                             <form asp-controller="Employee"
                                   asp-action="DeleteEmployee"
                                   method="post"
@@ -186,6 +191,7 @@
                                 </button>
 
                             </form>
+                            }
 
                         </div>
 

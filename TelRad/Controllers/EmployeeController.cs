@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using TelRad.Data;
 using TelRad.Models;
 
@@ -13,62 +14,56 @@ namespace TelRad.Controllers
             _context = context;
         }
 
+        // 👤 PUBLIC (GUEST + ADMIN can use)
+        [AllowAnonymous]
         public IActionResult Search()
         {
             var employees = _context.Employees.ToList();
-
             return View(employees);
         }
 
+        [AllowAnonymous]
         [HttpPost]
         public IActionResult Search(string keyword)
         {
+            var employees = _context.Employees.ToList();
+
             if (string.IsNullOrWhiteSpace(keyword))
             {
                 ViewBag.Message = "Please enter a search keyword";
-
-                var employees = _context.Employees.ToList();
-
                 return View(employees);
             }
 
             var employee = _context.Employees
-                .FirstOrDefault(e =>
-                    (!string.IsNullOrEmpty(e.FullName) &&
-                     e.FullName.Trim().ToLower() == keyword.Trim().ToLower())
-                );
+                .FirstOrDefault(e => e.FullName.Trim().ToLower() == keyword.Trim().ToLower());
 
             if (employee == null)
             {
                 ViewBag.Message = "Employee not found";
-
-                var employees = _context.Employees.ToList();
-
                 return View(employees);
             }
 
-            var vm = new SearchResultViewModel
+            return View("Result", new SearchResultViewModel
             {
                 Employee = employee
-            };
-
-            return View("Result", vm);
+            });
         }
 
+        // 🔐 ADMIN ONLY ACTIONS
+
+        [Authorize(Roles = "Admin")]
         public IActionResult AllEmployees()
         {
-            var employees = _context.Employees.ToList();
-
-            return View(employees);
+            return View(_context.Employees.ToList());
         }
 
+        [Authorize(Roles = "Admin")]
         public IActionResult NearestTelrad()
         {
-            var employees = _context.Employees.ToList();
-
-            return View(employees);
+            return View(_context.Employees.ToList());
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public IActionResult AssignNearestTelrad(int id, string nearestTelrad)
         {
@@ -77,13 +72,13 @@ namespace TelRad.Controllers
             if (employee != null)
             {
                 employee.NearestTelrad = nearestTelrad;
-
                 _context.SaveChanges();
             }
 
             return RedirectToAction("Search");
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public IActionResult DeleteEmployee(int id)
         {
