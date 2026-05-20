@@ -15,7 +15,6 @@ namespace TelRad.Models
         [Required]
         public string? Department { get; set; } = "";
 
-        [Required]
         public string? AssignedTelrad { get; set; } = "";
 
         public string? NearestTelrad { get; set; } = "";

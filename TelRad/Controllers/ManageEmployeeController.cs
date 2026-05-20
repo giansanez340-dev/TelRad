@@ -15,7 +15,7 @@ namespace TelRad.Controllers
 
         public IActionResult Index()
         {
-            return View();
+            return View("Search");
         }
 
         [HttpPost]
@@ -40,10 +40,10 @@ namespace TelRad.Controllers
 
                 TempData["Success"] = "Employee added successfully";
 
-                return RedirectToAction("Index");
+                return RedirectToAction("Search", "Employee");
             }
 
-            return View(employee);
+            return View("Search","Employee");
         }
     }
 }
