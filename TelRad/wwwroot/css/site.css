@@ -234,3 +234,54 @@ td.actions-column {
     max-width: 90%;
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
 }
+
+
+/*Show Active or Inactive Status For the Telrad*/
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.dot-active {
+    background-color: #23a659;
+    box-shadow: 0 0 4px #28a745;
+}
+
+.dot-inactive {
+    background-color: #eb4646;
+}
+
+
+.save-btn,
+.delete-btn {
+    transition: background 0.2s ease, color 0.2s ease;
+}
+    .save-btn:hover,
+    .delete-btn:hover {
+        background: white !important;
+        color: #17315e !important;
+        border: none;
+    }
+
+.toggle-active-btn {
+    background: white !important;
+    border: 2px solid !important;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+    /* Inactive state (default) — icon is gray */
+    .toggle-active-btn:hover {
+        border-color: #eb4646;
+        background: #eb4646;
+    }
+
+    /* Active state — icon is green */
+    .toggle-active-btn.active-state:hover {
+        border-color: #23a659;
+        background: transparent;
+    }

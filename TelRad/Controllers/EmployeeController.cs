@@ -126,5 +126,23 @@ namespace TelRad.Controllers
             _context.SaveChanges();
             return Ok();
         }
+
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> UpdateActiveStatus([FromBody] UpdateActiveStatusRequest request)
+        {
+            var employee = await _context.Employees.FindAsync(request.EmployeeId);
+            if (employee == null) return NotFound();
+
+            employee.IsActive = request.IsActive;
+            await _context.SaveChangesAsync();
+            return Ok();
+        }
+
+        public class UpdateActiveStatusRequest
+        {
+            public int EmployeeId { get; set; }
+            public bool IsActive { get; set; }
+        }
     }
 }

@@ -47,10 +47,7 @@
     <table class="table table-hover align-middle">
         <thead style="background:#17315e; color:white; align-items: center;">
             <tr>
-                @if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Admin"))
-                {
-                    <th style="width: 50px; text-align: center;">Main</th>
-                }
+                <th style="width: 50px; text-align: center;">Main</th>
                 <th class="text-start" style="text-align: left;">Full Name</th>
                 <th>Branch</th>
                 <th>Department</th>
@@ -68,10 +65,8 @@
                     data-branch="@employee.Branch"
                     data-department="@employee.Department"
                     data-assignedtelrad="@employee.AssignedTelrad"
-                    data-mainhandler="@(employee.IsMainHandler ? "true" : "false")">
-
-                    @if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Admin"))
-                    {
+                    data-mainhandler="@(employee.IsMainHandler ? "true" : "false")"
+                    data-isactive="@(employee.IsActive ? "true" : "false")">
                         <td>
                             <input type="checkbox"
                                    class="main-handler-checkbox"
@@ -85,7 +80,6 @@
                                    class="main-handler-hidden"
                                    data-mainhandler="@(employee.IsMainHandler ? "true" : "false")">
                         </td>
-                    }
                     <td class="text-start">
                         <span class="cell-text">@employee.FullName</span>
                         <input class="form-control edit-input" name="FullName" value="@employee.FullName" />
@@ -102,8 +96,11 @@
                     </td>
 
                     <td>
-                        <span class="cell-text">@employee.AssignedTelrad</span>
-                        <input class="form-control edit-input" name="AssignedTelrad" value="@employee.AssignedTelrad" />
+                        <div class="d-flex align-items-center justify-content-center gap-2">
+                            <span class="status-dot @(employee.IsActive ? "dot-active" : "dot-inactive")"></span>
+                            <span class="cell-text">@employee.AssignedTelrad</span>
+                            <input class="form-control edit-input" name="AssignedTelrad" value="@employee.AssignedTelrad" />
+                        </div>
                     </td>
 
                     <td>
@@ -116,6 +113,15 @@
                     {
                         <td class="actions-column">
                             <div class="d-flex gap-2 justify-content-end">
+
+                                <!-- TOGGLE ACTIVE BUTTON -->
+                                <button type="button"
+                                        class="btn toggle-active-btn d-none @(employee.IsActive ? "active-state" : "")"
+                                        data-employeeid="@employee.Id"
+                                        data-isactive="@(employee.IsActive ? "true" : "false")"
+                                        title="@(employee.IsActive ? "Set Inactive" : "Set Active")">
+                                    <i class="bi @(employee.IsActive ? "bi-toggle-on text-success" : "bi-toggle-off text-secondary")"></i>
+                                </button>
 
                                 <!-- EDIT BUTTON -->
                                 <button type="button" class="btn btn-warning edit-btn btn-sm">
@@ -131,7 +137,7 @@
                                     <input type="hidden" name="Department" class="form-control edit-input" value="@employee.Department" />
                                     <input type="hidden" name="AssignedTelrad" class="form-control edit-input" value="@employee.AssignedTelrad" />
                                     <input type="hidden" name="NearestTelrad" class="form-control edit-input" value="@employee.NearestTelrad" />
-                                    <button type="submit" class="btn btn-success btn-sm">Save</button>
+                                    <button type="submit" class="btn btn-success save-btn btn-sm">Save</button>
                                 </form>
 
                                 <!-- DELETE FORM -->
@@ -141,7 +147,7 @@
                                       class="d-none delete-form"
                                       onsubmit="return confirm('Delete this employee?');">
                                     <input type="hidden" name="Id" value="@employee.Id" />
-                                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                    <button type="submit" class="btn delete-btn btn-danger btn-sm">Delete</button>
                                 </form>
 
                             </div>
@@ -209,8 +215,12 @@
         const branchFilter = document.getElementById('branchFilter');
         const departmentFilter = document.getElementById('departmentFilter');
         const departmentList = document.getElementById('departmentList');
+
+        // Admin-only elements — may be null for anonymous users
+        const addBtn = document.getElementById('addEmployeeBtn');
+        const modal = document.getElementById('addEmployeeModal');
+        const closeBtn = document.getElementById('closeModalBtn');
         const branchModal = document.getElementById('branchModal');
-        const departmentModal = document.getElementById('departmentModal');
         const departmentListModal = document.getElementById('departmentListModal');
 
         const rows = document.querySelectorAll('#employeeTableBody tr');
@@ -222,30 +232,52 @@
             "Pasig": ["Operator","EXECOM","CONFERENCE","PROCUREMENT & SHIPPING","TREASURY","OTHERS","PANTRY","CORPORATE AFFAIRS"]
         };
 
-        const addBtn = document.getElementById('addEmployeeBtn');
-        const modal = document.getElementById('addEmployeeModal');
-        const closeBtn = document.getElementById('closeModalBtn');
+        // ✅ Guard all admin-only elements
+        if (addBtn && modal && closeBtn) {
+            addBtn.addEventListener('click', () => {
+                modal.style.display = 'flex';
+            });
 
-        addBtn.addEventListener('click', () => {
-            modal.style.display = 'flex'; // show modal
-        });
-
-        closeBtn.addEventListener('click', () => {
-            modal.style.display = 'none'; // hide modal
-        });
-
-        // Close modal if user clicks outside the content
-        window.addEventListener('click', (e) => {
-            if (e.target === modal) {
+            closeBtn.addEventListener('click', () => {
                 modal.style.display = 'none';
-            }
-        });
+            });
+
+            window.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+
+        // ✅ Guard modal branch/department dropdowns
+        if (branchModal && departmentListModal) {
+            branchModal.addEventListener('input', function () {
+                const value = this.value;
+                departmentListModal.innerHTML = '';
+                if (departments[value]) {
+                    departments[value].forEach(d => {
+                        const opt = document.createElement('option');
+                        opt.value = d;
+                        departmentListModal.appendChild(opt);
+                    });
+                }
+            });
+        }
 
         // FILTERING
         function filterTable() {
             const search = searchFilter.value.toLowerCase();
             const branch = branchFilter.value.toLowerCase();
             const dept = departmentFilter.value.toLowerCase();
+
+            let searchMatchesName = false;
+            if (search) {
+                rows.forEach(row => {
+                    if (row.dataset.name.toLowerCase().includes(search)) {
+                        searchMatchesName = true;
+                    }
+                });
+            }
 
             rows.forEach(row => {
                 const name = row.dataset.name.toLowerCase();
@@ -256,13 +288,11 @@
 
                 let match;
 
-                if (search && assignedTelrad.includes(search)) {
-                    // If searching by Telrad number, only show main handler
-                    match = isMainHandler;
+                if (search && assignedTelrad.includes(search) && !searchMatchesName) {
+                    match = true;
                 } else {
-                    // Regular filtering
                     match =
-                        (name.includes(search) || assignedTelrad.includes(search)) &&
+                        (!search || name.includes(search) || assignedTelrad.includes(search)) &&
                         (!branch || rBranch.includes(branch)) &&
                         (!dept || rDept.includes(dept));
                 }
@@ -271,20 +301,9 @@
             });
         }
 
-                branchModal.addEventListener('input', function() {
-            const value = this.value;
-            departmentListModal.innerHTML = ''; // clear previous options
-            if (departments[value]) {
-                departments[value].forEach(d => {
-                    const opt = document.createElement('option');
-                    opt.value = d;
-                    departmentListModal.appendChild(opt);
-                });
-            }
-        }); 
-
         searchFilter.addEventListener('input', filterTable);
-        branchFilter.addEventListener('input', function() {
+
+        branchFilter.addEventListener('input', function () {
             const value = this.value;
             departmentList.innerHTML = '';
             if (departments[value]) {
@@ -296,9 +315,10 @@
             }
             filterTable();
         });
+
         departmentFilter.addEventListener('input', filterTable);
 
-        // EDIT BUTTON
+        //EDIT BUTTON
         document.querySelectorAll('.edit-btn').forEach(btn => {
             btn.addEventListener('click', function () {
                 const row = this.closest('tr');
@@ -307,20 +327,20 @@
                 const saveForm = row.querySelector('.save-form');
                 const deleteForm = row.querySelector('.delete-form');
                 const checkbox = row.querySelector('.main-handler-checkbox');
+                const toggleBtn = row.querySelector('.toggle-active-btn'); // 👈 add this
 
                 saveForm.classList.remove('d-none');
                 deleteForm.classList.remove('d-none');
+                if (toggleBtn) toggleBtn.classList.remove('d-none'); // 👈 add this
 
                 if (checkbox) {
                     checkbox.disabled = false;
                     checkbox.style.cursor = "pointer";
                 }
 
-                this.classList.add('d-none'); // hide edit button
+                this.classList.add('d-none');
             });
         });
-
-        // SAVE FORM SUBMIT
         document.querySelectorAll('.save-form').forEach(form => {
             form.addEventListener('submit', function () {
                 const row = this.closest('tr');
@@ -328,7 +348,7 @@
                 const hiddenInput = this.querySelector('.main-handler-hidden');
 
                 if (checkbox && hiddenInput) {
-                    hiddenInput.value = checkbox.checked.toString(); // sync checkbox
+                    hiddenInput.value = checkbox.checked.toString();
                 }
 
                 row.querySelectorAll('input.edit-input').forEach(input => {
@@ -338,7 +358,6 @@
             });
         });
 
-        // MAIN HANDLER CHECKBOX CHANGE
         document.querySelectorAll('.main-handler-checkbox').forEach(cb => {
             cb.addEventListener('change', function () {
                 if (this.disabled) return;
@@ -346,7 +365,6 @@
                 const telrad = this.dataset.telrad;
                 const employeeId = this.dataset.employeeid;
 
-                // uncheck other checkboxes for same Telrad
                 document.querySelectorAll(`.main-handler-checkbox[data-telrad="${telrad}"]`).forEach(other => {
                     if (other !== this) {
                         other.checked = false;
@@ -355,7 +373,6 @@
                     }
                 });
 
-                // AJAX to update server immediately
                 fetch('/Employee/UpdateMainHandler', {
                     method: 'POST',
                     headers: {
@@ -372,6 +389,62 @@
                 }).catch(err => {
                     console.error(err);
                     alert('Error updating main handler');
+                });
+            });
+        });
+
+
+                    document.querySelectorAll('.toggle-active-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const employeeId = this.dataset.employeeid;
+                const isActive = this.dataset.isactive === 'true';
+                const newState = !isActive;
+
+                // ✅ Update UI instantly BEFORE the fetch
+                this.dataset.isactive = newState.toString();
+                this.title = newState ? 'Set Inactive' : 'Set Active';
+
+                const icon = this.querySelector('i');
+                icon.className = newState ? 'bi bi-toggle-on text-success' : 'bi bi-toggle-off text-secondary';
+
+                if (newState) {
+                    this.classList.add('active-state');
+                } else {
+                    this.classList.remove('active-state');
+                }
+
+                const row = this.closest('tr');
+                const dot = row.querySelector('.status-dot');
+                if (dot) {
+                    dot.className = 'status-dot ' + (newState ? 'dot-active' : 'dot-inactive');
+                }
+                row.dataset.isactive = newState.toString();
+
+                // Then sync with server in background
+                fetch('/Employee/UpdateActiveStatus', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: JSON.stringify({ EmployeeId: employeeId, IsActive: newState })
+                }).then(resp => {
+                    if (!resp.ok) {
+                        // ❌ Revert UI if server fails
+                        this.dataset.isactive = isActive.toString();
+                        icon.className = isActive ? 'bi bi-toggle-on text-success' : 'bi bi-toggle-off text-secondary';
+                        if (isActive) {
+                            this.classList.add('active-state');
+                        } else {
+                            this.classList.remove('active-state');
+                        }
+                        if (dot) dot.className = 'status-dot ' + (isActive ? 'dot-active' : 'dot-inactive');
+                        row.dataset.isactive = isActive.toString();
+                        alert('Failed to update status');
+                    }
+                }).catch(err => {
+                    console.error(err);
+                    alert('Error updating status');
                 });
             });
         });
