@@ -272,16 +272,5 @@ td.actions-column {
     transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
     padding: 4px 8px;
     border-radius: 6px;
+    color: #eb4646;
 }
-
-    /* Inactive state (default) — icon is gray */
-    .toggle-active-btn:hover {
-        border-color: #eb4646;
-        background: #eb4646;
-    }
-
-    /* Active state — icon is green */
-    .toggle-active-btn.active-state:hover {
-        border-color: #23a659;
-        background: transparent;
-    }
