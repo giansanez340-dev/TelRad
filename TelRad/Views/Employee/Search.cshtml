@@ -97,7 +97,10 @@
 
                     <td>
                         <div class="d-flex align-items-center justify-content-center gap-2">
-                            <span class="status-dot @(employee.IsActive ? "dot-active" : "dot-inactive")"></span>
+                            @if (!string.IsNullOrEmpty(employee.AssignedTelrad))
+                            {
+                                <span class="status-dot @(employee.IsActive ? "dot-active" : "dot-inactive")"></span>
+                            }
                             <span class="cell-text">@employee.AssignedTelrad</span>
                             <input class="form-control edit-input" name="AssignedTelrad" value="@employee.AssignedTelrad" />
                         </div>
