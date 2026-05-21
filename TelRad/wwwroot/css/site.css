@@ -315,3 +315,25 @@ td.actions-column {
         border-color: #17315e !important;
         outline-style: none !important;
     }
+
+#departmentFilter {
+    max-height: 240px; /* ~10 items depending on font size */
+    overflow-y: auto;
+}
+
+.custom-table thead th {
+    background: #17315e;
+    color:white;
+}
+
+.custom-table thead tr:first-child th:first-child {
+    border-top-left-radius: 10px;
+}
+
+.custom-table thead tr:first-child th:last-child {
+    border-top-right-radius: 10px;
+}
+.custom-table {
+    border-collapse: separate;
+    border-spacing: 0;
+}

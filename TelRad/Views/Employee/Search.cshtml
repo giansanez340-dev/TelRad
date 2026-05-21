@@ -11,53 +11,142 @@
 <h2 class="mb-4">Local IP Phone Directory</h2>
 
 <!-- FILTERS -->
-<div class="card p-4 mb-4">
-    <div class="row">
-        <div class="col-md-4 mb-3">
-            <label>Search Employee or Telrad Number</label>
-            <input type="text" id="searchFilter" name="fullName" form="inlineAddForm" class="form-control" />
+<div class="container-fluid mb-4">
+
+    <!-- DASHBOARD CARDS -->
+    <div class="row g-3 mb-3">
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small">Total Employees</div>
+                        <div class="fs-4 fw-bold">@Model.Count()</div>
+                    </div>
+                    <i class="bi bi-people-fill fs-2 text-primary"></i>
+                </div>
+            </div>
         </div>
 
-        <div class="col-md-4 mb-3">
-            <label>Branch</label>
-            <input type="text" id="branchFilter" class="form-control" list="branchList" />
-            <datalist id="branchList">
-                <option value="Agoo"></option>
-                <option value="Candon"></option>
-                <option value="RM"></option>
-                <option value="Pasig"></option>
-            </datalist>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small">Active</div>
+                        <div class="fs-4 fw-bold text-success">
+                            @Model.Count(x => x.IsActive)
+                        </div>
+                    </div>
+                    <i class="bi bi-check-circle-fill fs-2 text-success"></i>
+                </div>
+            </div>
         </div>
 
-        <div class="col-md-4 mb-3">
-            <label>Department</label>
-            <input type="text" id="departmentFilter" class="form-control" list="departmentList" />
-            <datalist id="departmentList"></datalist>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small">Inactive</div>
+                        <div class="fs-4 fw-bold text-danger">
+                            @Model.Count(x => !x.IsActive)
+                        </div>
+                    </div>
+                    <i class="bi bi-x-circle-fill fs-2 text-danger"></i>
+                </div>
+            </div>
         </div>
+
     </div>
 
-    @if (isAdmin)
-    {
-        <form id="inlineAddForm" class="row g-2 align-items-end">
-            @Html.AntiForgeryToken()
-            <div class="col-md-4">
-                <label class="form-label mb-1">Assigned Telrad</label>
-                <input type="text" name="assignedTelrad" class="form-control" />
+    <!-- FILTER + ADD CARD -->
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+
+            <!-- FILTER HEADER -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0 fw-semibold">Filters & Management</h6>
             </div>
-            <div class="col-md-4">
-                <label class="form-label mb-1">Nearest Telrad</label>
-                <input type="text" name="nearestTelrad" class="form-control" />
+
+            <!-- FILTER ROW -->
+            <div class="row g-3">
+
+                <div class="col-md-4">
+                    <label class="form-label text-muted small">Search</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text"
+                               id="searchFilter"
+                               class="form-control"
+                               placeholder="Name">
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label text-muted small">Branch</label>
+                    <select id="branchFilter" class="form-select">
+                        <option value="">All Branches</option>
+                        <option value="Agoo">Agoo</option>
+                        <option value="Candon">Candon</option>
+                        <option value="RM">RM</option>
+                        <option value="Pasig">Pasig</option>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label text-muted small">Department</label>
+                    <input type="text"
+                           id="departmentFilter"
+                           class="form-control"
+                           list="departmentList"
+                           placeholder="Select department">
+                    <datalist id="departmentList"></datalist>
+                </div>
+
             </div>
-            <div class="col-md-4">
-                <button type="submit" class="btn btn-primary w-100">+ Add</button>
-            </div>
-        </form>
-    }
+
+            <hr class="my-4">
+
+            <!-- ADD EMPLOYEE -->
+            @if (isAdmin)
+            {
+                <form id="inlineAddForm" class="row g-3 align-items-end">
+
+                    @Html.AntiForgeryToken()
+
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small">Assigned Telrad</label>
+                        <input type="text"
+                               id="telradFilter"
+                               class="form-control"
+                               placeholder="Filter by assigned telrad">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small">Nearest Telrad</label>
+                        <input type="text"
+                               name="nearestTelrad"
+                               class="form-control"
+                               placeholder="Enter nearest number">
+                    </div>
+
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-primary w-100 fw-semibold">
+                            <i class="bi bi-plus-lg me-1"></i> Add Employee
+                        </button>
+                    </div>
+
+                </form>
+            }
+
+        </div>
+    </div>
 </div>
 
 <!-- TABLE -->
 <div class="table-responsive">
-    <table class="table table-hover align-middle">
+    <table class="table table-hover align-middle custom-table">
         <thead style="background:#17315e; color:white; align-items: center;">
             <tr>
                 <th style="width: 50px; text-align: center;">Main</th>
@@ -157,16 +246,16 @@
                                     <button type="submit" class="btn btn-success save-btn btn-sm">Save</button>
                                 </form>
 
-                                <!-- DELETE FORM 
-                                <form asp-controller="Employee"
-                                      asp-action="DeleteEmployee"
+          
+@*                                 <form asp-controller="employee"
+                                      asp-action="deleteemployee"
                                       method="post"
                                       class="d-none delete-form"
-                                      onsubmit="return confirm('Delete this employee?');">
-                                    <input type="hidden" name="Id" value="@employee.Id" />
-                                    <button type="submit" class="btn delete-btn btn-danger btn-sm">Delete</button>
-                                </form>
-                                -->
+                                      onsubmit="return confirm('delete this employee?');">
+                                    <input type="hidden" name="id" value="@employee.Id" />
+                                    <button type="submit" class="btn delete-btn btn-danger btn-sm">delete</button>
+                                </form> *@
+                                
                             </div>
                         </td>
                     }
@@ -221,6 +310,7 @@
         const branchFilter = document.getElementById('branchFilter');
         const departmentFilter = document.getElementById('departmentFilter');
         const departmentList = document.getElementById('departmentList');
+        const telradFilter = document.getElementById('telradFilter');
 
         const rows = document.querySelectorAll('#employeeTableBody tr');
 
@@ -231,20 +321,36 @@
             "Pasig": ["Operator","EXECOM","CONFERENCE","PROCUREMENT & SHIPPING","TREASURY","OTHERS","PANTRY","CORPORATE AFFAIRS"]
         };
 
+        function populateDepartments(branch = "") {
+            departmentList.innerHTML = "";
+
+            let list = [];
+
+            if (branch && departments[branch]) {
+                list = departments[branch];
+            } else {
+                // flatten all departments from all branches
+                Object.values(departments).forEach(arr => {
+                    list.push(...arr);
+                });
+            }
+
+            // remove duplicates
+            list = [...new Set(list)];
+
+            list.forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d;
+                departmentList.appendChild(opt);
+            });
+        }
+
         // FILTERING
         function filterTable() {
             const search = searchFilter.value.toLowerCase();
             const branch = branchFilter.value.toLowerCase();
             const dept = departmentFilter.value.toLowerCase();
-
-            let searchMatchesName = false;
-            if (search) {
-                rows.forEach(row => {
-                    if (row.dataset.name.toLowerCase().includes(search)) {
-                        searchMatchesName = true;
-                    }
-                });
-            }
+            const telrad = telradFilter.value.toLowerCase();
 
             rows.forEach(row => {
                 const name = row.dataset.name.toLowerCase();
@@ -252,16 +358,11 @@
                 const rDept = row.dataset.department.toLowerCase();
                 const assignedTelrad = row.dataset.assignedtelrad.toLowerCase();
 
-                let match;
-
-                if (search && assignedTelrad.includes(search) && !searchMatchesName) {
-                    match = true;
-                } else {
-                    match =
-                        (!search || name.includes(search) || assignedTelrad.includes(search)) &&
-                        (!branch || rBranch.includes(branch)) &&
-                        (!dept || rDept.includes(dept));
-                }
+                const match =
+                    (!search || name.includes(search)) &&
+                    (!telrad || assignedTelrad.includes(telrad)) &&
+                    (!branch || rBranch.includes(branch)) &&
+                    (!dept || rDept.includes(dept));
 
                 row.style.display = match ? '' : 'none';
             });
@@ -282,7 +383,10 @@
             filterTable();
         });
 
-        departmentFilter.addEventListener('input', filterTable);
+            branchFilter.addEventListener('change', function () {
+            populateDepartments(this.value);
+            filterTable();
+        });
 
         //EDIT BUTTON
         document.querySelectorAll('.edit-btn').forEach(btn => {
@@ -291,13 +395,16 @@
                 row.classList.add('editing');
 
                 const saveForm = row.querySelector('.save-form');
-                const deleteForm = row.querySelector('.delete-form');
                 const checkbox = row.querySelector('.main-handler-checkbox');
-                const toggleBtn = row.querySelector('.toggle-active-btn'); // 👈 add this
+                const toggleBtn = row.querySelector('.toggle-active-btn');
 
-                saveForm.classList.remove('d-none');
-                deleteForm.classList.remove('d-none');
-                if (toggleBtn) toggleBtn.classList.remove('d-none'); // 👈 add this
+                if (saveForm) saveForm.classList.remove('d-none');
+
+                // ❌ delete form is optional now
+                const deleteForm = row.querySelector('.delete-form');
+                if (deleteForm) deleteForm.classList.remove('d-none');
+
+                if (toggleBtn) toggleBtn.classList.remove('d-none');
 
                 if (checkbox) {
                     checkbox.disabled = false;
