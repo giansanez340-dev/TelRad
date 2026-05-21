@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using TelRad.Data;
 using TelRad.Models;
 
 namespace TelRad.Controllers
 {
+    [Authorize(Roles = "Admin")]
     public class ManageEmployeeController : Controller
     {
         private readonly AppDbContext _context;
@@ -19,31 +21,47 @@ namespace TelRad.Controllers
         }
 
         [HttpPost]
-        public IActionResult Index(Employee employee)
+        [ValidateAntiForgeryToken]
+        public IActionResult AddEmployee([FromBody] Employee employee)
         {
-            if (ModelState.IsValid)
+            if (employee == null)
+                return BadRequest(new { error = "Invalid data." });
+
+            // Trim to avoid whitespace mismatches
+            employee.FullName = (employee.FullName ?? "").Trim();
+            employee.Branch = (employee.Branch ?? "").Trim();
+            employee.Department = (employee.Department ?? "").Trim();
+            employee.AssignedTelrad = (employee.AssignedTelrad ?? "").Trim();
+            employee.NearestTelrad = (employee.NearestTelrad ?? "").Trim();
+
+            bool duplicateExists = _context.Employees.Any(e =>
+                (e.FullName ?? "").Trim() == employee.FullName &&
+                (e.Branch ?? "").Trim() == employee.Branch &&
+                (e.Department ?? "").Trim() == employee.Department &&
+                (e.AssignedTelrad ?? "").Trim() == employee.AssignedTelrad &&
+                (e.NearestTelrad ?? "").Trim() == employee.NearestTelrad &&
+                e.IsActive == true
+            );
+
+            if (duplicateExists)
+                return Conflict(new { error = "An active employee with the same details already exists. Please deactivate them first before adding again." });
+
+            employee.IsActive = true;
+            employee.IsMainHandler = false;
+
+            _context.Employees.Add(employee);
+            _context.SaveChanges();
+
+            return Ok(new
             {
-                var lastEmployee = _context.Employees
-                    .OrderByDescending(e => e.Id)
-                    .FirstOrDefault();
-
-                int nextNumber = 1;
-
-                if (lastEmployee != null)
-                {
-                    nextNumber = lastEmployee.Id + 1;
-                }
-
-                _context.Employees.Add(employee);
-
-                _context.SaveChanges();
-
-                TempData["Success"] = "Employee added successfully";
-
-                return RedirectToAction("Search", "Employee");
-            }
-
-            return View("Search","Employee");
+                id = employee.Id,
+                fullName = employee.FullName,
+                branch = employee.Branch,
+                department = employee.Department,
+                assignedTelrad = employee.AssignedTelrad,
+                nearestTelrad = employee.NearestTelrad,
+                isActive = employee.IsActive
+            });
         }
     }
 }
