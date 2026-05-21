@@ -2,25 +2,20 @@
 
 @{
     ViewData["Title"] = "Nearest Telrad";
+    bool isAdmin = User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Admin");
 }
 
 <link rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-<h2 class="mb-4 d-flex justify-content-between align-items-center">
-    Nearest Telrad
-    @if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Admin"))
-    {
-        <button id="addEmployeeBtn" class="btn btn-primary btn-sm">Add Employee</button>
-    }
-</h2>
+<h2 class="mb-4">Nearest Telrad</h2>
 
 <!-- FILTERS -->
 <div class="card p-4 mb-4">
     <div class="row">
         <div class="col-md-4 mb-3">
             <label>Search Employee or Telrad Number</label>
-            <input type="text" id="searchFilter" class="form-control" />
+            <input type="text" id="searchFilter" name="fullName" form="inlineAddForm" class="form-control" />
         </div>
         <div class="col-md-4 mb-3">
             <label>Branch</label>
@@ -38,6 +33,23 @@
             <datalist id="departmentList"></datalist>
         </div>
     </div>
+
+    @if (isAdmin)
+    {
+        <form id="inlineAddForm" asp-controller="Employee" asp-action="AddInlineEmployee" method="post" class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label mb-1">Assigned Telrad</label>
+                <input type="text" name="assignedTelrad" class="form-control" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label mb-1">Nearest Telrad</label>
+                <input type="text" name="nearestTelrad" class="form-control" />
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary w-100">+ Add</button>
+            </div>
+        </form>
+    }
 </div>
 
 <!-- TABLE -->
@@ -51,6 +63,7 @@
                 <th>Department</th>
                 <th>Assigned Telrad</th>
                 <th>Nearest Telrad</th>
+                <th>Status</th>
                 <th></th>
             </tr>
         </thead>
@@ -88,21 +101,22 @@
                         <input class="form-control edit-input d-none" name="Department" value="@employee.Department" />
                     </td>
                     <td>
-                        <div class="d-flex align-items-center justify-content-center gap-2">
-                            @if (!string.IsNullOrEmpty(employee.AssignedTelrad))
-                            {
-                                <span class="status-dot @(employee.IsActive ? "dot-active" : "dot-inactive")"></span>
-                            }
-                            <span class="cell-text">@employee.AssignedTelrad</span>
-                            <input class="form-control edit-input d-none" name="AssignedTelrad" value="@employee.AssignedTelrad" />
-                        </div>
+                        <span class="cell-text">@employee.AssignedTelrad</span>
+                        <input class="form-control edit-input" name="AssignedTelrad" value="@employee.AssignedTelrad" />
                     </td>
                     <td>
                         <span class="cell-text">@employee.NearestTelrad</span>
                         <input class="form-control edit-input d-none" name="NearestTelrad" value="@employee.NearestTelrad" />
                     </td>
 
-                    @if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Admin"))
+                    <td>
+                        <span class="badge status-badge @(employee.IsActive ? "bg-success" : "bg-danger")">
+                            @(employee.IsActive ? "Active" : "Inactive")
+                        </span>
+                    </td>
+
+                    <!-- ACTIONS COLUMN -->
+                    @if (isAdmin)
                     {
                         <td class="actions-column">
                             <div class="d-flex gap-2 justify-content-end">
@@ -152,50 +166,14 @@
     </table>
 </div>
 
-@if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Admin"))
+@if (TempData["Success"] != null)
 {
-    <div id="addEmployeeModal" class="modal-overlay">
-        <div class="modal-content">
-            <h4 class="mb-3">Add New Employee</h4>
+    <div class="alert alert-success mt-3">@TempData["Success"]</div>
+}
 
-            <!-- Error message shows here without closing modal -->
-            <div id="addEmployeeError" class="alert alert-danger d-none"></div>
-
-            <form id="addEmployeeForm">
-                <div class="mb-2">
-                    <label>Full Name</label>
-                    <input type="text" id="addFullName" class="form-control" required />
-                </div>
-                <div class="mb-2">
-                    <label>Branch</label>
-                    <input type="text" id="addBranch" class="form-control" list="branchListModal" required />
-                    <datalist id="branchListModal">
-                        <option value="Agoo"></option>
-                        <option value="Candon"></option>
-                        <option value="RM"></option>
-                        <option value="Pasig"></option>
-                    </datalist>
-                </div>
-                <div class="mb-2">
-                    <label>Department</label>
-                    <input type="text" id="addDepartment" class="form-control" list="departmentListModal" required />
-                    <datalist id="departmentListModal"></datalist>
-                </div>
-                <div class="mb-2">
-                    <label>Assigned Telrad</label>
-                    <input type="text" id="addAssignedTelrad" class="form-control" />
-                </div>
-                <div class="mb-2">
-                    <label>Nearest Telrad</label>
-                    <input type="text" id="addNearestTelrad" class="form-control" />
-                </div>
-                <div class="d-flex justify-content-end gap-2 mt-3">
-                    <button type="button" class="btn btn-secondary" id="closeModalBtn">Cancel</button>
-                    <button type="submit" class="btn btn-success">Add</button>
-                </div>
-            </form>
-        </div>
-    </div>
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger mt-3">@TempData["Error"]</div>
 }
 
 @section Scripts {
@@ -204,14 +182,6 @@
         const branchFilter = document.getElementById('branchFilter');
         const departmentFilter = document.getElementById('departmentFilter');
         const departmentList = document.getElementById('departmentList');
-
-        const addBtn = document.getElementById('addEmployeeBtn');
-        const modal = document.getElementById('addEmployeeModal');
-        const closeBtn = document.getElementById('closeModalBtn');
-        const branchModal = document.getElementById('addBranch');
-        const departmentListModal = document.getElementById('departmentListModal');
-        const addEmployeeForm = document.getElementById('addEmployeeForm');
-        const addEmployeeError = document.getElementById('addEmployeeError');
 
         const rows = document.querySelectorAll('#employeeTableBody tr');
 
@@ -230,280 +200,7 @@
             "Pasig": ["Operator","EXECOM","CONFERENCE","PROCUREMENT & SHIPPING","TREASURY","OTHERS","PANTRY","CORPORATE AFFAIRS"]
         };
 
-        // ✅ Shared applyState helper
-        function applyState(targetRow, state) {
-            const dot = targetRow.querySelector('.status-dot');
-            const toggleBtn = targetRow.querySelector('.toggle-active-btn');
-            const icon = toggleBtn ? toggleBtn.querySelector('i') : null;
-
-            if (dot) dot.className = 'status-dot ' + (state ? 'dot-active' : 'dot-inactive');
-            if (toggleBtn) {
-                toggleBtn.dataset.isactive = state.toString();
-                toggleBtn.title = state ? 'Set Inactive' : 'Set Active';
-                toggleBtn.classList.toggle('active-state', state);
-            }
-            if (icon) icon.className = state ? 'bi bi-toggle-on text-success' : 'bi bi-toggle-off text-danger';
-            targetRow.dataset.isactive = state.toString();
-        }
-
-        // ✅ Modal open/close
-        if (addBtn && modal && closeBtn) {
-            addBtn.addEventListener('click', () => {
-                modal.style.display = 'flex';
-            });
-            closeBtn.addEventListener('click', () => {
-                modal.style.display = 'none';
-                addEmployeeError.classList.add('d-none');
-                addEmployeeError.textContent = '';
-            });
-            window.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    modal.style.display = 'none';
-                    addEmployeeError.classList.add('d-none');
-                    addEmployeeError.textContent = '';
-                }
-            });
-        }
-
-        // ✅ Modal branch/department dropdown
-        if (branchModal && departmentListModal) {
-            branchModal.addEventListener('input', function () {
-                const value = this.value;
-                departmentListModal.innerHTML = '';
-                if (departments[value]) {
-                    departments[value].forEach(d => {
-                        const opt = document.createElement('option');
-                        opt.value = d;
-                        departmentListModal.appendChild(opt);
-                    });
-                }
-            });
-        }
-
-        // ✅ Add Employee via fetch — no page refresh
-        if (addEmployeeForm) {
-            addEmployeeForm.addEventListener('submit', async function (e) {
-                e.preventDefault();
-
-                addEmployeeError.classList.add('d-none');
-                addEmployeeError.textContent = '';
-
-                const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
-
-                const payload = {
-                    fullName: document.getElementById('addFullName').value,
-                    branch: document.getElementById('addBranch').value,
-                    department: document.getElementById('addDepartment').value,
-                    assignedTelrad: document.getElementById('addAssignedTelrad').value,
-                    nearestTelrad: document.getElementById('addNearestTelrad').value
-                };
-
-                try {
-                    const resp = await fetch('/ManageEmployee/AddEmployee', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'RequestVerificationToken': token
-                        },
-                        body: JSON.stringify(payload)
-                    });
-
-                    const data = await resp.json();
-
-                    if (resp.ok) {
-                        modal.style.display = 'none';
-                        addEmployeeForm.reset();
-
-                        const tbody = document.getElementById('employeeTableBody');
-                        const tr = document.createElement('tr');
-                        tr.dataset.name = data.fullName;
-                        tr.dataset.branch = data.branch;
-                        tr.dataset.department = data.department;
-                        tr.dataset.assignedtelrad = data.assignedTelrad ?? '';
-                        tr.dataset.mainhandler = 'false';
-                        tr.dataset.isactive = 'true';
-
-                        tr.innerHTML = `
-                            <td>
-                                <input type="checkbox" class="main-handler-checkbox"
-                                    data-telrad="${data.assignedTelrad ?? ''}"
-                                    data-employeeid="${data.id}" disabled />
-                                <input type="hidden" name="IsMainHandler" class="main-handler-hidden" data-mainhandler="false">
-                            </td>
-                            <td class="text-start">
-                                <span class="cell-text">${data.fullName}</span>
-                                <input class="form-control edit-input d-none" name="FullName" value="${data.fullName}" />
-                            </td>
-                            <td>
-                                <span class="cell-text">${data.branch}</span>
-                                <input class="form-control edit-input d-none" name="Branch" value="${data.branch}" />
-                            </td>
-                            <td>
-                                <span class="cell-text">${data.department}</span>
-                                <input class="form-control edit-input d-none" name="Department" value="${data.department}" />
-                            </td>
-                            <td>
-                                <div class="d-flex align-items-center justify-content-center gap-2">
-                                    ${data.assignedTelrad ? '<span class="status-dot dot-active"></span>' : ''}
-                                    <span class="cell-text">${data.assignedTelrad ?? ''}</span>
-                                    <input class="form-control edit-input d-none" name="AssignedTelrad" value="${data.assignedTelrad ?? ''}" />
-                                </div>
-                            </td>
-                            <td>
-                                <span class="cell-text">${data.nearestTelrad ?? ''}</span>
-                                <input class="form-control edit-input d-none" name="NearestTelrad" value="${data.nearestTelrad ?? ''}" />
-                            </td>
-                            <td class="actions-column">
-                                <div class="d-flex gap-2 justify-content-end">
-                                    <button type="button"
-                                        class="btn toggle-active-btn d-none active-state"
-                                        data-employeeid="${data.id}"
-                                        data-isactive="true"
-                                        title="Set Inactive">
-                                        <i class="bi bi-toggle-on text-success"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-warning edit-btn btn-sm">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                    <form action="/Employee/UpdateEmployee" method="post" class="d-none save-form">
-                                        <input type="hidden" name="Id" value="${data.id}" />
-                                        <input type="hidden" name="IsMainHandler" class="main-handler-hidden" value="false" />
-                                        <input type="hidden" name="FullName" value="${data.fullName}" />
-                                        <input type="hidden" name="Branch" value="${data.branch}" />
-                                        <input type="hidden" name="Department" value="${data.department}" />
-                                        <input type="hidden" name="AssignedTelrad" value="${data.assignedTelrad ?? ''}" />
-                                        <input type="hidden" name="NearestTelrad" value="${data.nearestTelrad ?? ''}" />
-                                        <button type="submit" class="btn btn-success save-btn btn-sm">Save</button>
-                                    </form>
-                                    <form action="/Employee/DeleteEmployee" method="post" class="d-none delete-form"
-                                        onsubmit="return confirm('Delete this employee?');">
-                                        <input type="hidden" name="Id" value="${data.id}" />
-                                        <button type="submit" class="btn delete-btn btn-danger btn-sm">Delete</button>
-                                    </form>
-                                </div>
-                            </td>
-                        `;
-
-                        tbody.appendChild(tr);
-                        attachRowListeners(tr);
-
-                    } else {
-                        addEmployeeError.textContent = data.error ?? 'Something went wrong.';
-                        addEmployeeError.classList.remove('d-none');
-                    }
-
-                } catch (err) {
-                    console.error(err);
-                    addEmployeeError.textContent = 'Network error. Please try again.';
-                    addEmployeeError.classList.remove('d-none');
-                }
-            });
-        }
-
-        // ✅ Attach listeners to a row (used for both existing and newly added rows)
-        function attachRowListeners(row) {
-
-            // Edit button
-            const editBtn = row.querySelector('.edit-btn');
-            if (editBtn) {
-                editBtn.addEventListener('click', function () {
-                    row.classList.add('editing');
-                    row.querySelector('.save-form').classList.remove('d-none');
-                    row.querySelector('.delete-form').classList.remove('d-none');
-                    const toggleBtn = row.querySelector('.toggle-active-btn');
-                    if (toggleBtn) toggleBtn.classList.remove('d-none');
-                    const checkbox = row.querySelector('.main-handler-checkbox');
-                    if (checkbox) { checkbox.disabled = false; checkbox.style.cursor = 'pointer'; }
-                    this.classList.add('d-none');
-
-                    row.querySelectorAll('.cell-text').forEach(s => s.classList.add('d-none'));
-                    row.querySelectorAll('.edit-input').forEach(i => i.classList.remove('d-none'));
-                });
-            }
-
-            // Save form
-            const saveForm = row.querySelector('.save-form');
-            if (saveForm) {
-                saveForm.addEventListener('submit', function () {
-                    const checkbox = row.querySelector('.main-handler-checkbox');
-                    const hiddenInput = this.querySelector('.main-handler-hidden');
-                    if (checkbox && hiddenInput) hiddenInput.value = checkbox.checked.toString();
-                    row.querySelectorAll('input.edit-input').forEach(input => {
-                        const hidden = this.querySelector(`input[name="${input.name}"]`);
-                        if (hidden) hidden.value = input.value;
-                    });
-                });
-            }
-
-            // Toggle active button
-            const toggleBtn = row.querySelector('.toggle-active-btn');
-            if (toggleBtn) {
-                toggleBtn.addEventListener('click', function () {
-                    const employeeId = this.dataset.employeeid;
-                    const isActive = this.dataset.isactive === 'true';
-                    const newState = !isActive;
-                    const assignedTelrad = row.dataset.assignedtelrad;
-                    const sharedRows = document.querySelectorAll(`#employeeTableBody tr[data-assignedtelrad="${assignedTelrad}"]`);
-
-                    sharedRows.forEach(r => applyState(r, newState));
-
-                    const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
-                    fetch('/Employee/UpdateActiveStatus', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'RequestVerificationToken': token
-                        },
-                        body: JSON.stringify({ EmployeeId: employeeId, IsActive: newState })
-                    }).then(resp => {
-                        if (!resp.ok) {
-                            sharedRows.forEach(r => applyState(r, isActive));
-                            alert('Failed to update status');
-                        }
-                    }).catch(err => {
-                        console.error(err);
-                        sharedRows.forEach(r => applyState(r, isActive));
-                        alert('Error updating status');
-                    });
-                });
-            }
-
-            // Main handler checkbox
-            const checkbox = row.querySelector('.main-handler-checkbox');
-            if (checkbox) {
-                checkbox.addEventListener('change', function () {
-                    if (this.disabled) return;
-                    const telrad = this.dataset.telrad;
-                    const employeeId = this.dataset.employeeid;
-                    document.querySelectorAll(`.main-handler-checkbox[data-telrad="${telrad}"]`).forEach(other => {
-                        if (other !== this) {
-                            other.checked = false;
-                            const hidden = other.closest('tr').querySelector('.main-handler-hidden');
-                            if (hidden) hidden.value = 'false';
-                        }
-                    });
-                    const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
-                    fetch('/Employee/UpdateMainHandler', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'RequestVerificationToken': token
-                        },
-                        body: JSON.stringify({ EmployeeId: employeeId, IsMainHandler: this.checked, AssignedTelrad: telrad })
-                    }).then(resp => {
-                        if (!resp.ok) alert('Failed to update main handler');
-                    }).catch(err => {
-                        console.error(err);
-                        alert('Error updating main handler');
-                    });
-                });
-            }
-        }
-
-        // ✅ Attach listeners to all existing rows on page load
-        document.querySelectorAll('#employeeTableBody tr').forEach(row => attachRowListeners(row));
-
-        // ✅ FILTERING
+        // FILTERING
         function filterTable() {
             const search = searchFilter.value.toLowerCase();
             const branch = branchFilter.value.toLowerCase();
@@ -551,5 +248,149 @@
         });
 
         departmentFilter.addEventListener('input', filterTable);
+
+        //EDIT BUTTON
+        document.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const row = this.closest('tr');
+                row.classList.add('editing');
+
+                const saveForm = row.querySelector('.save-form');
+                const deleteForm = row.querySelector('.delete-form');
+                const checkbox = row.querySelector('.main-handler-checkbox');
+                const toggleBtn = row.querySelector('.toggle-active-btn'); // 👈 add this
+
+                saveForm.classList.remove('d-none');
+                deleteForm.classList.remove('d-none');
+                if (toggleBtn) toggleBtn.classList.remove('d-none'); // 👈 add this
+
+                if (checkbox) {
+                    checkbox.disabled = false;
+                    checkbox.style.cursor = "pointer";
+                }
+
+                this.classList.add('d-none');
+            });
+        });
+        document.querySelectorAll('.save-form').forEach(form => {
+            form.addEventListener('submit', function () {
+                const row = this.closest('tr');
+                const checkbox = row.querySelector('.main-handler-checkbox');
+                const hiddenInput = this.querySelector('.main-handler-hidden');
+
+                if (checkbox && hiddenInput) {
+                    hiddenInput.value = checkbox.checked.toString();
+                }
+
+                row.querySelectorAll('input.edit-input').forEach(input => {
+                    const hidden = this.querySelector(`input[name="${input.name}"]`);
+                    if (hidden) hidden.value = input.value;
+                });
+            });
+        });
+
+        document.querySelectorAll('.main-handler-checkbox').forEach(cb => {
+            cb.addEventListener('change', function () {
+                if (this.disabled) return;
+
+                const telrad = this.dataset.telrad;
+                const employeeId = this.dataset.employeeid;
+
+                document.querySelectorAll(`.main-handler-checkbox[data-telrad="${telrad}"]`).forEach(other => {
+                    if (other !== this) {
+                        other.checked = false;
+                        const hidden = other.closest('tr').querySelector('.main-handler-hidden');
+                        if (hidden) hidden.value = "false";
+                    }
+                });
+
+                fetch('/Employee/UpdateMainHandler', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: JSON.stringify({
+                        EmployeeId: employeeId,
+                        IsMainHandler: this.checked,
+                        AssignedTelrad: telrad
+                    })
+                }).then(resp => {
+                    if (!resp.ok) alert('Failed to update main handler');
+                }).catch(err => {
+                    console.error(err);
+                    alert('Error updating main handler');
+                });
+            });
+        });
+
+
+        document.querySelectorAll('.toggle-active-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const employeeId = this.dataset.employeeid;
+                const isActive = this.dataset.isactive === 'true';
+                const newState = !isActive;
+
+                const row = this.closest('tr');
+                const assignedTelrad = row.dataset.assignedtelrad;
+
+                // ✅ Helper to apply UI state to a single row
+                function applyState(targetRow, state) {
+                    const statusBadge = targetRow.querySelector('.status-badge');
+                    const toggleBtn = targetRow.querySelector('.toggle-active-btn');
+                    const icon = toggleBtn ? toggleBtn.querySelector('i') : null;
+
+                    if (statusBadge) {
+                        statusBadge.textContent = state ? 'Active' : 'Inactive';
+                        statusBadge.className = 'badge status-badge ' + (state ? 'bg-success' : 'bg-danger');
+                    }
+
+                    if (toggleBtn) {
+                        toggleBtn.dataset.isactive = state.toString();
+                        toggleBtn.title = state ? 'Set Inactive' : 'Set Active';
+                        if (state) {
+                            toggleBtn.classList.add('active-state');
+                        } else {
+                            toggleBtn.classList.remove('active-state');
+                        }
+                    }
+
+                    if (icon) {
+                        icon.className = state ? 'bi bi-toggle-on text-success' : 'bi bi-toggle-off text-danger';
+                    }
+
+                    targetRow.dataset.isactive = state.toString();
+                }
+
+                // ✅ Find all rows sharing the same AssignedTelrad
+                const sharedRows = document.querySelectorAll(
+                    `#employeeTableBody tr[data-assignedtelrad="${assignedTelrad}"]`
+                );
+
+                // ✅ Update all matching rows instantly
+                sharedRows.forEach(r => applyState(r, newState));
+
+                // ✅ Sync with server
+                fetch('/Employee/UpdateActiveStatus', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: JSON.stringify({ EmployeeId: employeeId, IsActive: newState })
+                }).then(resp => {
+                    if (!resp.ok) {
+                        // ❌ Revert all matching rows if server fails
+                        sharedRows.forEach(r => applyState(r, isActive));
+                        alert('Failed to update status');
+                    }
+                }).catch(err => {
+                    console.error(err);
+                    // ❌ Revert all matching rows on network error
+                    sharedRows.forEach(r => applyState(r, isActive));
+                    alert('Error updating status');
+                });
+            });
+        });
     </script>
 }
