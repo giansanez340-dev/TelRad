@@ -17,7 +17,6 @@
             <label>Search Employee or Telrad Number</label>
             <input type="text" id="searchFilter" name="fullName" form="inlineAddForm" class="form-control" />
         </div>
-
         <div class="col-md-4 mb-3">
             <label>Branch</label>
             <input type="text" id="branchFilter" class="form-control" list="branchList" />
@@ -28,7 +27,6 @@
                 <option value="Pasig"></option>
             </datalist>
         </div>
-
         <div class="col-md-4 mb-3">
             <label>Department</label>
             <input type="text" id="departmentFilter" class="form-control" list="departmentList" />
@@ -69,9 +67,7 @@
                 <th></th>
             </tr>
         </thead>
-
         <tbody id="employeeTableBody">
-
             @foreach (var employee in Model)
             {
                 <tr data-name="@employee.FullName"
@@ -80,42 +76,37 @@
                     data-assignedtelrad="@employee.AssignedTelrad"
                     data-mainhandler="@(employee.IsMainHandler ? "true" : "false")"
                     data-isactive="@(employee.IsActive ? "true" : "false")">
-                        <td>
-                            <input type="checkbox"
-                                   class="main-handler-checkbox"
-                                   data-telrad="@employee.AssignedTelrad"
-                                   data-employeeid="@employee.Id"
-                                   @(employee.IsMainHandler ? "checked" : "")
-                                   disabled />
-
-                            <input type="hidden"
-                                   name="IsMainHandler"
-                                   class="main-handler-hidden"
-                                   data-mainhandler="@(employee.IsMainHandler ? "true" : "false")">
-                        </td>
+                    <td>
+                        <input type="checkbox"
+                               class="main-handler-checkbox"
+                               data-telrad="@employee.AssignedTelrad"
+                               data-employeeid="@employee.Id"
+                               @(employee.IsMainHandler ? "checked" : "")
+                               disabled />
+                        <input type="hidden"
+                               name="IsMainHandler"
+                               class="main-handler-hidden"
+                               data-mainhandler="@(employee.IsMainHandler ? "true" : "false")">
+                    </td>
                     <td class="text-start">
                         <span class="cell-text">@employee.FullName</span>
-                        <input class="form-control edit-input" name="FullName" value="@employee.FullName" />
+                        <input class="form-control edit-input d-none" name="FullName" value="@employee.FullName" />
                     </td>
-
                     <td>
                         <span class="cell-text">@employee.Branch</span>
-                        <input class="form-control edit-input" name="Branch" value="@employee.Branch" />
+                        <input class="form-control edit-input d-none" name="Branch" value="@employee.Branch" />
                     </td>
-
                     <td>
                         <span class="cell-text">@employee.Department</span>
-                        <input class="form-control edit-input" name="Department" value="@employee.Department" />
+                        <input class="form-control edit-input d-none" name="Department" value="@employee.Department" />
                     </td>
-
                     <td>
                         <span class="cell-text">@employee.AssignedTelrad</span>
                         <input class="form-control edit-input" name="AssignedTelrad" value="@employee.AssignedTelrad" />
                     </td>
-
                     <td>
                         <span class="cell-text">@employee.NearestTelrad</span>
-                        <input class="form-control edit-input" name="NearestTelrad" value="@employee.NearestTelrad" />
+                        <input class="form-control edit-input d-none" name="NearestTelrad" value="@employee.NearestTelrad" />
                     </td>
 
                     <td>
@@ -136,7 +127,7 @@
                                         data-employeeid="@employee.Id"
                                         data-isactive="@(employee.IsActive ? "true" : "false")"
                                         title="@(employee.IsActive ? "Set Inactive" : "Set Active")">
-                                       <i class="bi @(employee.IsActive ? "bi-toggle-on text-success" : "bi-toggle-off text-danger")"></i>
+                                    <i class="bi @(employee.IsActive ? "bi-toggle-on text-success" : "bi-toggle-off text-danger")"></i>
                                 </button>
 
                                 <!-- EDIT BUTTON -->
@@ -148,11 +139,11 @@
                                 <form asp-controller="Employee" asp-action="UpdateEmployee" method="post" class="d-none save-form">
                                     <input type="hidden" name="Id" value="@employee.Id" />
                                     <input type="hidden" name="IsMainHandler" class="main-handler-hidden" value="@employee.IsMainHandler" />
-                                    <input type="hidden" name="FullName" class="form-control edit-input" value="@employee.FullName" />
-                                    <input type="hidden" name="Branch" class="form-control edit-input" value="@employee.Branch" />
-                                    <input type="hidden" name="Department" class="form-control edit-input" value="@employee.Department" />
-                                    <input type="hidden" name="AssignedTelrad" class="form-control edit-input" value="@employee.AssignedTelrad" />
-                                    <input type="hidden" name="NearestTelrad" class="form-control edit-input" value="@employee.NearestTelrad" />
+                                    <input type="hidden" name="FullName" value="@employee.FullName" />
+                                    <input type="hidden" name="Branch" value="@employee.Branch" />
+                                    <input type="hidden" name="Department" value="@employee.Department" />
+                                    <input type="hidden" name="AssignedTelrad" value="@employee.AssignedTelrad" />
+                                    <input type="hidden" name="NearestTelrad" value="@employee.NearestTelrad" />
                                     <button type="submit" class="btn btn-success save-btn btn-sm">Save</button>
                                 </form>
 
@@ -169,10 +160,8 @@
                             </div>
                         </td>
                     }
-
                 </tr>
             }
-
         </tbody>
     </table>
 </div>
@@ -196,6 +185,14 @@
 
         const rows = document.querySelectorAll('#employeeTableBody tr');
 
+        const payload = {
+            FullName: document.getElementById('addFullName').value.trim(),
+            Branch: document.getElementById('addBranch').value.trim(),
+            Department: document.getElementById('addDepartment').value.trim(),
+            AssignedTelrad: document.getElementById('addAssignedTelrad').value.trim(),
+            NearestTelrad: document.getElementById('addNearestTelrad').value.trim()
+        };
+
         const departments = {
             "Agoo": ["Operator","EXECOM","LEAF","SAMPLE ROOM","AGRONOMY","SSDG","ACCOUNTING","HUMAN RESOURCES","INFORMATION TECHNOLOGY","BUYING LINE","CLINIC","CDF","OPERATION ACCOUNTING","LEAF ACCOUNTING","TREASURY","PROCUREMENT & SHIPPING","LEGAL","CORPORATE AFFAIRS","BLENDING LINE","QUALITY CONTROL","ENGINEERING","EHSS","FINISHED GOODS","PRODUCTION","SCALEHOUSE","TRAFFIC MANAGEMENT GROUP","GREEN LEAF LOGISTIC","SAN JACINTO"],
             "Candon": ["EXECOM","OPERATIONS ACCOUNTING","INFORMATION TECHNOLOGY","HUMAN RESOURCE","TREASURY","PROCUREMENT & SHIPPING","GLLM","GLLM & TMG CURRIMAO","ACCOUNTING CURRIMAO","TREASURY CURRIMAO","ADMIN & LOGISTICS","ENGINEERING","GUARD","MANAGERS","RISK MANAGEMENT","SSDG","BUYING","FRU","RTF","AGRONOMY","FRA CURRIMAO","STA CRUZ WAREHOUSE"],
@@ -212,9 +209,7 @@
             let searchMatchesName = false;
             if (search) {
                 rows.forEach(row => {
-                    if (row.dataset.name.toLowerCase().includes(search)) {
-                        searchMatchesName = true;
-                    }
+                    if (row.dataset.name.toLowerCase().includes(search)) searchMatchesName = true;
                 });
             }
 
@@ -225,7 +220,6 @@
                 const assignedTelrad = row.dataset.assignedtelrad.toLowerCase();
 
                 let match;
-
                 if (search && assignedTelrad.includes(search) && !searchMatchesName) {
                     match = true;
                 } else {
@@ -234,7 +228,6 @@
                         (!branch || rBranch.includes(branch)) &&
                         (!dept || rDept.includes(dept));
                 }
-
                 row.style.display = match ? '' : 'none';
             });
         }
