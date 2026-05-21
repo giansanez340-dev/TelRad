@@ -1,5 +1,5 @@
-﻿
-@model List<TelRad.Models.Employee>
+﻿@model List<TelRad.Models.Employee>
+
 @{
     ViewData["Title"] = "Nearest Telrad";
     bool isAdmin = User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Admin");
@@ -107,12 +107,6 @@
                     <td>
                         <span class="cell-text">@employee.NearestTelrad</span>
                         <input class="form-control edit-input d-none" name="NearestTelrad" value="@employee.NearestTelrad" />
-                    </td>
-
-                    <td>
-                        <span class="badge status-badge @(employee.IsActive ? "bg-success" : "bg-danger")">
-                            @(employee.IsActive ? "Active" : "Inactive")
-                        </span>
                     </td>
 
                     <td>
