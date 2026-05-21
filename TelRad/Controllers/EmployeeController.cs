@@ -110,6 +110,34 @@ namespace TelRad.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
+        public IActionResult AddInlineEmployee(string fullName, string? assignedTelrad, string? nearestTelrad)
+        {
+            if (string.IsNullOrWhiteSpace(fullName))
+            {
+                TempData["Error"] = "Name is required to add a new entry.";
+                return RedirectToAction("Search");
+            }
+
+            var employee = new Employee
+            {
+                FullName = fullName.Trim(),
+                Branch = "Unassigned",
+                Department = "Unassigned",
+                AssignedTelrad = string.IsNullOrWhiteSpace(assignedTelrad) ? null : assignedTelrad.Trim(),
+                NearestTelrad = string.IsNullOrWhiteSpace(nearestTelrad) ? null : nearestTelrad.Trim(),
+                IsActive = true
+            };
+
+            _context.Employees.Add(employee);
+            _context.SaveChanges();
+
+            TempData["Success"] = "Entry added successfully.";
+            return RedirectToAction("Search");
+        }
+
+        [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult UpdateMainHandler([FromBody] MainHandlerUpdateModel model)
         {
