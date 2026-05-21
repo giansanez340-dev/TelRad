@@ -123,7 +123,7 @@
                                         data-employeeid="@employee.Id"
                                         data-isactive="@(employee.IsActive ? "true" : "false")"
                                         title="@(employee.IsActive ? "Set Inactive" : "Set Active")">
-                                    <i class="bi @(employee.IsActive ? "bi-toggle-on text-success" : "bi-toggle-off text-secondary")"></i>
+                                       <i class="bi @(employee.IsActive ? "bi-toggle-on text-success" : "bi-toggle-off text-danger")"></i>
                                 </button>
 
                                 <!-- EDIT BUTTON -->
@@ -397,33 +397,51 @@
         });
 
 
-                    document.querySelectorAll('.toggle-active-btn').forEach(btn => {
+        document.querySelectorAll('.toggle-active-btn').forEach(btn => {
             btn.addEventListener('click', function () {
                 const employeeId = this.dataset.employeeid;
                 const isActive = this.dataset.isactive === 'true';
                 const newState = !isActive;
 
-                // ✅ Update UI instantly BEFORE the fetch
-                this.dataset.isactive = newState.toString();
-                this.title = newState ? 'Set Inactive' : 'Set Active';
-
-                const icon = this.querySelector('i');
-                icon.className = newState ? 'bi bi-toggle-on text-success' : 'bi bi-toggle-off text-secondary';
-
-                if (newState) {
-                    this.classList.add('active-state');
-                } else {
-                    this.classList.remove('active-state');
-                }
-
                 const row = this.closest('tr');
-                const dot = row.querySelector('.status-dot');
-                if (dot) {
-                    dot.className = 'status-dot ' + (newState ? 'dot-active' : 'dot-inactive');
-                }
-                row.dataset.isactive = newState.toString();
+                const assignedTelrad = row.dataset.assignedtelrad;
 
-                // Then sync with server in background
+                // ✅ Helper to apply UI state to a single row
+                function applyState(targetRow, state) {
+                    const dot = targetRow.querySelector('.status-dot');
+                    const toggleBtn = targetRow.querySelector('.toggle-active-btn');
+                    const icon = toggleBtn ? toggleBtn.querySelector('i') : null;
+
+                    if (dot) {
+                        dot.className = 'status-dot ' + (state ? 'dot-active' : 'dot-inactive');
+                    }
+
+                    if (toggleBtn) {
+                        toggleBtn.dataset.isactive = state.toString();
+                        toggleBtn.title = state ? 'Set Inactive' : 'Set Active';
+                        if (state) {
+                            toggleBtn.classList.add('active-state');
+                        } else {
+                            toggleBtn.classList.remove('active-state');
+                        }
+                    }
+
+                    if (icon) {
+                        icon.className = state ? 'bi bi-toggle-on text-success' : 'bi bi-toggle-off text-danger';
+                    }
+
+                    targetRow.dataset.isactive = state.toString();
+                }
+
+                // ✅ Find all rows sharing the same AssignedTelrad
+                const sharedRows = document.querySelectorAll(
+                    `#employeeTableBody tr[data-assignedtelrad="${assignedTelrad}"]`
+                );
+
+                // ✅ Update all matching rows instantly
+                sharedRows.forEach(r => applyState(r, newState));
+
+                // ✅ Sync with server
                 fetch('/Employee/UpdateActiveStatus', {
                     method: 'POST',
                     headers: {
@@ -433,20 +451,14 @@
                     body: JSON.stringify({ EmployeeId: employeeId, IsActive: newState })
                 }).then(resp => {
                     if (!resp.ok) {
-                        // ❌ Revert UI if server fails
-                        this.dataset.isactive = isActive.toString();
-                        icon.className = isActive ? 'bi bi-toggle-on text-success' : 'bi bi-toggle-off text-secondary';
-                        if (isActive) {
-                            this.classList.add('active-state');
-                        } else {
-                            this.classList.remove('active-state');
-                        }
-                        if (dot) dot.className = 'status-dot ' + (isActive ? 'dot-active' : 'dot-inactive');
-                        row.dataset.isactive = isActive.toString();
+                        // ❌ Revert all matching rows if server fails
+                        sharedRows.forEach(r => applyState(r, isActive));
                         alert('Failed to update status');
                     }
                 }).catch(err => {
                     console.error(err);
+                    // ❌ Revert all matching rows on network error
+                    sharedRows.forEach(r => applyState(r, isActive));
                     alert('Error updating status');
                 });
             });

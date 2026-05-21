@@ -15,7 +15,7 @@ namespace TelRad.Migrations
                 table: "Employees",
                 type: "bit",
                 nullable: false,
-                defaultValue: false);
+                defaultValue: true);
         }
 
         /// <inheritdoc />
