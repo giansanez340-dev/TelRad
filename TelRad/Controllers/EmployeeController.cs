@@ -120,9 +120,20 @@ namespace TelRad.Controllers
                 return RedirectToAction("Search");
             }
 
+            var normalizedFullName = fullName.Trim();
+            var duplicateExists = _context.Employees.Any(e =>
+                !string.IsNullOrWhiteSpace(e.FullName) &&
+                e.FullName!.Trim().ToLower() == normalizedFullName.ToLower());
+
+            if (duplicateExists)
+            {
+                TempData["Error"] = "An entry with the same Full Name already exists.";
+                return RedirectToAction("Search");
+            }
+
             var employee = new Employee
             {
-                FullName = fullName.Trim(),
+                FullName = normalizedFullName,
                 Branch = "Unassigned",
                 Department = "Unassigned",
                 AssignedTelrad = string.IsNullOrWhiteSpace(assignedTelrad) ? null : assignedTelrad.Trim(),
