@@ -25,7 +25,12 @@ namespace TelRad.Controllers
         public IActionResult AddEmployee([FromBody] Employee employee)
         {
             if (employee == null)
-                return BadRequest(new { error = "Invalid data." });
+            {
+                return BadRequest(new
+                {
+                    error = "Invalid employee data."
+                });
+            }
 
             // Trim to avoid whitespace mismatches
             employee.FullName = (employee.FullName ?? "").Trim();
@@ -59,8 +64,7 @@ namespace TelRad.Controllers
                 branch = employee.Branch,
                 department = employee.Department,
                 assignedTelrad = employee.AssignedTelrad,
-                nearestTelrad = employee.NearestTelrad,
-                isActive = employee.IsActive
+                nearestTelrad = employee.NearestTelrad
             });
         }
     }

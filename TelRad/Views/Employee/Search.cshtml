@@ -38,7 +38,8 @@
 
     @if (isAdmin)
     {
-        <form id="inlineAddForm" asp-controller="Employee" asp-action="AddInlineEmployee" method="post" class="row g-2 align-items-end">
+        <form id="inlineAddForm" class="row g-2 align-items-end">
+            @Html.AntiForgeryToken()
             <div class="col-md-4">
                 <label class="form-label mb-1">Assigned Telrad</label>
                 <input type="text" name="assignedTelrad" class="form-control" />
@@ -177,6 +178,32 @@
     </table>
 </div>
 
+<!-- RESPONSE MODAL -->
+<div id="responseModal" class="custom-modal">
+    <div class="custom-modal-content">
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 id="responseModalTitle" class="mb-0">Message</h5>
+
+            <button type="button"
+                    class="btn-close"
+                    id="closeResponseModal">
+            </button>
+        </div>
+
+        <div id="responseModalBody"></div>
+
+        <div class="text-end mt-3">
+            <button type="button"
+                    class="btn btn-primary"
+                    id="responseModalOk">
+                OK
+            </button>
+        </div>
+
+    </div>
+</div>
+
 @if (TempData["Success"] != null)
 {
     <div class="alert alert-success mt-3">@TempData["Success"]</div>
@@ -186,6 +213,7 @@
 {
     <div class="alert alert-danger mt-3">@TempData["Error"]</div>
 }
+
 
 @section Scripts {
     <script>
@@ -399,5 +427,180 @@
                 });
             });
         });
+
+                // ===============================
+        // RESPONSE MODAL
+        // ===============================
+
+        const responseModal = document.getElementById('responseModal');
+        const responseModalTitle = document.getElementById('responseModalTitle');
+        const responseModalBody = document.getElementById('responseModalBody');
+        const closeResponseModal = document.getElementById('closeResponseModal');
+        const responseModalOk = document.getElementById('responseModalOk');
+
+        function showModal(title, message, isSuccess = false) {
+
+            responseModalTitle.textContent = title;
+
+            responseModalBody.innerHTML = `
+                <div class="alert ${isSuccess ? 'alert-success' : 'alert-danger'} mb-0">
+                    ${message}
+                </div>
+            `;
+
+            responseModal.style.display = 'flex';
+        }
+
+        function closeModal() {
+            responseModal.style.display = 'none';
+        }
+
+        closeResponseModal.addEventListener('click', closeModal);
+        responseModalOk.addEventListener('click', closeModal);
+
+        window.addEventListener('click', function (e) {
+            if (e.target === responseModal) {
+                closeModal();
+            }
+        });
+
+
+        // ===============================
+        // INLINE ADD AJAX
+        // ===============================
+
+        const inlineAddForm = document.getElementById('inlineAddForm');
+
+        if (inlineAddForm) {
+
+                    inlineAddForm.addEventListener('submit', async function (e) {
+
+            e.preventDefault();
+
+            const payload = {
+                fullName: document.getElementById('searchFilter').value.trim(),
+                branch: document.getElementById('branchFilter').value.trim(),
+                department: document.getElementById('departmentFilter').value.trim(),
+                assignedTelrad: this.querySelector('input[name="assignedTelrad"]').value.trim(),
+                nearestTelrad: this.querySelector('input[name="nearestTelrad"]').value.trim()
+            };
+
+            try {
+
+                const response = await fetch('/ManageEmployee/AddEmployee', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken':
+                            document.querySelector('#inlineAddForm input[name="__RequestVerificationToken"]').value
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                // ✅ Parse safely
+                let data = {};
+
+                try {
+                    data = await response.json();
+                }
+                catch {
+                    data = {};
+                }
+
+                // =========================
+                // HANDLE ERROR RESPONSE
+                // =========================
+
+                if (!response.ok) {
+
+                    showModal(
+                        'Duplicate Record',
+                        data.error || 'An error occurred while adding employee.'
+                    );
+
+                    return;
+                }
+
+                // =========================
+                // SUCCESS
+                // =========================
+
+                showModal(
+                    'Success',
+                    'Employee added successfully.',
+                    true
+                );
+
+                // =========================
+                // ADD ROW TO TABLE
+                // =========================
+
+                const tbody = document.getElementById('employeeTableBody');
+
+                const tr = document.createElement('tr');
+
+                tr.dataset.name = data.fullName;
+                tr.dataset.branch = data.branch;
+                tr.dataset.department = data.department;
+                tr.dataset.assignedtelrad = data.assignedTelrad;
+                tr.dataset.mainhandler = "false";
+                tr.dataset.isactive = "true";
+
+                tr.innerHTML = `
+                    <td>
+                        <input type="checkbox"
+                               class="main-handler-checkbox"
+                               data-telrad="${data.assignedTelrad}"
+                               data-employeeid="${data.id}"
+                               disabled />
+
+                        <input type="hidden"
+                               name="IsMainHandler"
+                               class="main-handler-hidden"
+                               data-mainhandler="false">
+                    </td>
+
+                    <td class="text-start">
+                        <span class="cell-text">${data.fullName}</span>
+                    </td>
+
+                    <td>
+                        <span class="cell-text">${data.branch}</span>
+                    </td>
+
+                    <td>
+                        <span class="cell-text">${data.department}</span>
+                    </td>
+
+                    <td>
+                        <span class="cell-text">${data.assignedTelrad}</span>
+                    </td>
+
+                    <td>
+                        <span class="cell-text">${data.nearestTelrad}</span>
+                    </td>
+
+                    <td>
+                        <span class="badge status-badge bg-success">
+                            Active
+                        </span>
+                    </td>
+                `;
+
+                tbody.prepend(tr);
+
+                inlineAddForm.reset();
+            }
+            catch (err) {
+
+                console.error(err);
+
+                showModal(
+                    'Server Error',
+                    err.message || 'Something went wrong while adding employee.'
+                );
+            }
+        });
+        }
     </script>
 }

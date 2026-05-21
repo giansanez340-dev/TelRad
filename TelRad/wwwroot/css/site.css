@@ -12,6 +12,19 @@ html {
     }
 }
 
+
+@keyframes modalPop {
+    from {
+        transform: scale(.9);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
 body {
     margin-bottom: 60px;
     color: #17315e;
@@ -274,3 +287,31 @@ td.actions-column {
     border-radius: 6px;
     color: #eb4646;
 }
+
+.custom-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.custom-modal-content {
+    background: white;
+    padding: 24px;
+    border-radius: 12px;
+    width: 400px;
+    max-width: 90%;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    animation: modalPop .2s ease;
+}
+
+    .form-control:focus,
+    input:focus {
+        outline: none !important;
+        box-shadow: 0 0 0 2px rgba(23, 49, 94, 0.15) !important;
+        border-color: #17315e !important;
+        outline-style: none !important;
+    }
