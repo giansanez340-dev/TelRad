@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using TelRad.Data;
 using TelRad.Models;
 
@@ -20,9 +21,12 @@ namespace TelRad.Controllers
             return View("Search");
         }
 
+        // =========================
+        // ADD EMPLOYEE
+        // =========================
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult AddEmployee([FromBody] Employee employee)
+        public async Task<IActionResult> AddEmployee([FromBody] Employee employee)
         {
             if (employee == null)
             {
@@ -32,40 +36,128 @@ namespace TelRad.Controllers
                 });
             }
 
-            // Trim to avoid whitespace mismatches
+            // TRIM VALUES
             employee.FullName = (employee.FullName ?? "").Trim();
             employee.Branch = (employee.Branch ?? "").Trim();
             employee.Department = (employee.Department ?? "").Trim();
             employee.AssignedTelrad = (employee.AssignedTelrad ?? "").Trim();
             employee.NearestTelrad = (employee.NearestTelrad ?? "").Trim();
 
-            bool duplicateExists = _context.Employees.Any(e =>
-                (e.FullName ?? "").Trim() == employee.FullName &&
-                (e.Branch ?? "").Trim() == employee.Branch &&
-                (e.Department ?? "").Trim() == employee.Department &&
-                (e.AssignedTelrad ?? "").Trim() == employee.AssignedTelrad &&
-                (e.NearestTelrad ?? "").Trim() == employee.NearestTelrad &&
-                e.IsActive == true
-            );
+            // REQUIRED ONLY FOR TELRAD
+            if (string.IsNullOrWhiteSpace(employee.AssignedTelrad))
+            {
+                return BadRequest(new
+                {
+                    error = "Assigned Telrad is required."
+                });
+            }
 
-            if (duplicateExists)
-                return Conflict(new { error = "An active employee with the same details already exists. Please deactivate them first before adding again." });
+            // =========================================
+            // BLOCK IF TELRAD IS INACTIVE
+            // =========================================
+
+            bool inactiveTelradExists = await _context.Employees
+                .AnyAsync(e =>
+                    e.AssignedTelrad == employee.AssignedTelrad &&
+                    !e.IsActive);
+
+            if (inactiveTelradExists)
+            {
+                return Conflict(new
+                {
+                    error = "This Telrad is inactive and cannot be assigned."
+                });
+            }
+
+            // =========================================
+            // EXACT DUPLICATE CHECK
+            // =========================================
+
+            bool exactDuplicateExists = await _context.Employees
+                .AnyAsync(e =>
+
+                    e.FullName == employee.FullName &&
+                    e.Branch == employee.Branch &&
+                    e.Department == employee.Department &&
+                    e.AssignedTelrad == employee.AssignedTelrad
+                );
+
+            if (exactDuplicateExists)
+            {
+                return Conflict(new
+                {
+                    error = "Duplicate employee record already exists."
+                });
+            }
+
+            // =========================================
+            // ALLOW SAME EMPLOYEE INFO
+            // IF TELRAD IS DIFFERENT + ACTIVE
+            // =========================================
 
             employee.IsActive = true;
             employee.IsMainHandler = false;
 
             _context.Employees.Add(employee);
-            _context.SaveChanges();
+
+            await _context.SaveChangesAsync();
 
             return Ok(new
             {
-                id = employee.Id,
-                fullName = employee.FullName,
-                branch = employee.Branch,
-                department = employee.Department,
-                assignedTelrad = employee.AssignedTelrad,
-                nearestTelrad = employee.NearestTelrad
+                success = true
             });
+        }
+
+        // =========================
+        // UPDATE EMPLOYEE (GROUP SAFE SAVE FIX)
+        // =========================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateEmployee([FromBody] Employee dto)
+        {
+            var employees = await _context.Employees
+                .Where(e => e.AssignedTelrad == dto.AssignedTelrad)
+                .ToListAsync();
+
+            if (!employees.Any())
+                return NotFound();
+
+            foreach (var emp in employees)
+            {
+                emp.FullName = dto.FullName;
+                emp.Branch = dto.Branch;
+                emp.Department = dto.Department;
+                emp.NearestTelrad = dto.NearestTelrad;
+                emp.IsMainHandler = dto.IsMainHandler;
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok();
+        }
+
+        // =========================
+        // TOGGLE ACTIVE (GROUP FIXED + PERSISTENT)
+        // =========================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateActiveStatus([FromBody] ToggleActiveDto dto)
+        {
+            var employees = await _context.Employees
+                .Where(e => e.AssignedTelrad == dto.AssignedTelrad)
+                .ToListAsync();
+
+            if (!employees.Any())
+                return NotFound();
+
+            foreach (var emp in employees)
+            {
+                emp.IsActive = dto.IsActive;
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { success = true });
         }
     }
 }

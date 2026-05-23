@@ -337,3 +337,12 @@ td.actions-column {
     border-collapse: separate;
     border-spacing: 0;
 }
+
+#departmentFilter {
+    max-height: 38px; /* keeps normal dropdown look */
+}
+
+/* controls the dropdown popup list */
+select#departmentFilter option {
+    padding: 6px;
+}
