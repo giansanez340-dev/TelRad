@@ -21,7 +21,7 @@
                 <div class="card-body d-flex justify-content-between align-items-center">
                     <div>
                         <div class="text-muted small">Total Employees</div>
-                        <div class="fs-4 fw-bold">@Model.Count()</div>
+                        <div class="fs-4 fw-bold">@Model.Select(x => x.FullName).Distinct().Count()</div>
                     </div>
                     <i class="bi bi-people-fill fs-2 text-primary"></i>
                 </div>
@@ -96,12 +96,10 @@
 
                 <div class="col-md-4">
                     <label class="form-label text-muted small">Department</label>
-
                     <div class="dropdown">
                         <button class="form-select text-start" type="button" data-bs-toggle="dropdown" id="departmentBtn">
                             All Departments
                         </button>
-
                         <ul class="dropdown-menu p-0" id="departmentDropdown"
                             style="max-height: 180px; overflow-y:auto; width:100%;">
                             <li><a class="dropdown-item dept-item" data-value="">All Departments</a></li>
@@ -112,40 +110,43 @@
             </div>
 
             <!-- ADD EMPLOYEE -->
-                <hr class="my-4">
+            <hr class="my-4">
 
-                <form id="inlineAddForm" class="row g-3 align-items-end">
+            <form id="inlineAddForm" class="row g-3 align-items-end">
 
-                    @Html.AntiForgeryToken()
+                @Html.AntiForgeryToken()
 
-                    <div class="col-md-4">
-                        <label class="form-label text-muted small">Assigned Telrad</label>
-                        <input type="text"
-                               id="telradFilter"
-                               class="form-control"
-                               placeholder="Filter by assigned telrad">
-                    </div>
+                <div class="col-md-4">
+                    <label class="form-label text-muted small">Assigned Telrad</label>
+                    <input type="text"
+                           id="telradFilter"
+                           class="form-control"
+                           placeholder="Filter by assigned telrad">
+                </div>
 
-                    <div class="col-md-4">
-                        <label class="form-label text-muted small">Nearest Telrad</label>
-                        <input type="text"
-                               name="nearestTelrad"
-                               class="form-control"
-                               placeholder="Enter nearest number">
-                    </div>
-                    @if (isAdmin)
-                    {
+                <div class="col-md-4">
+                    <label class="form-label text-muted small">Nearest Telrad</label>
+                    <input type="text"
+                           id="addNearestTelrad"
+                           name="nearestTelrad"
+                           class="form-control"
+                           placeholder="Enter nearest number">
+                </div>
+
+                @if (isAdmin)
+                {
                     <div class="col-md-4">
                         <button type="submit" class="btn btn-primary w-100 fw-semibold">
                             <i class="bi bi-plus-lg me-1"></i> Add Employee
                         </button>
                     </div>
-                    }
-                </form>
+                }
 
+            </form>
 
         </div>
     </div>
+
 </div>
 
 <!-- TABLE -->
@@ -250,7 +251,6 @@
                                     <button type="submit" class="btn btn-success save-btn btn-sm">Save</button>
                                 </form>
 
-
                                 <form asp-controller="employee"
                                       asp-action="deleteemployee"
                                       method="post"
@@ -277,7 +277,6 @@
 
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 id="responseModalTitle" class="mb-0">Message</h5>
-
             <button type="button"
                     class="btn-close"
                     id="closeResponseModal">
@@ -307,14 +306,12 @@
     <div class="alert alert-danger mt-3">@TempData["Error"]</div>
 }
 
-
 @section Scripts {
     <script>
         const searchFilter = document.getElementById('searchFilter');
         const branchFilter = document.getElementById('branchFilter');
         const telradFilter = document.getElementById('telradFilter');
         const inlineAddForm = document.getElementById('inlineAddForm');
-
 
         const departments = {
             "Agoo": ["Operator","EXECOM","LEAF","SAMPLE ROOM","AGRONOMY","SSDG","ACCOUNTING","HUMAN RESOURCES","INFORMATION TECHNOLOGY","BUYING LINE","CLINIC","CDF","OPERATION ACCOUNTING","LEAF ACCOUNTING","TREASURY","PROCUREMENT & SHIPPING","LEGAL","CORPORATE AFFAIRS","BLENDING LINE","QUALITY CONTROL","ENGINEERING","EHSS","FINISHED GOODS","PRODUCTION","SCALEHOUSE","TRAFFIC MANAGEMENT GROUP","GREEN LEAF LOGISTIC","SAN JACINTO"],
@@ -323,22 +320,18 @@
             "Pasig": ["Operator","EXECOM","CONFERENCE","PROCUREMENT & SHIPPING","TREASURY","OTHERS","PANTRY","CORPORATE AFFAIRS"]
         };
 
-               function populateDepartments(branch = "") {
-
+        // ===============================
+        // FILTER DEPARTMENT DROPDOWN
+        // ===============================
+        function populateDepartments(branch = "") {
             const dropdown = document.getElementById('departmentDropdown');
-
-            dropdown.innerHTML = `
-                <li><a class="dropdown-item dept-item" data-value="">All Departments</a></li>
-            `;
+            dropdown.innerHTML = `<li><a class="dropdown-item dept-item" data-value="">All Departments</a></li>`;
 
             let list = [];
-
             if (branch && departments[branch]) {
                 list = departments[branch];
             } else {
-                Object.values(departments).forEach(arr => {
-                    list.push(...arr);
-                });
+                Object.values(departments).forEach(arr => list.push(...arr));
             }
 
             list = [...new Set(list)];
@@ -356,22 +349,20 @@
         function attachDeptEvents() {
             document.querySelectorAll('.dept-item').forEach(item => {
                 item.addEventListener('click', function () {
-
                     const value = this.dataset.value;
                     const btn = document.getElementById('departmentBtn');
-
                     btn.textContent = value || 'All Departments';
                     btn.dataset.value = value;
-
                     filterTable();
                 });
             });
         }
 
-
         populateDepartments();
 
+        // ===============================
         // FILTERING
+        // ===============================
         function filterTable() {
             const search = (searchFilter?.value || "").trim().toLowerCase();
             const branch = (branchFilter?.value || "").trim().toLowerCase();
@@ -397,15 +388,15 @@
         }
 
         searchFilter.addEventListener('input', filterTable);
-
         telradFilter?.addEventListener('input', filterTable);
-
         branchFilter.addEventListener('change', function () {
             populateDepartments(this.value);
             filterTable();
         });
 
-        //EDIT BUTTON
+        // ===============================
+        // EDIT BUTTON
+        // ===============================
         document.addEventListener('click', function (e) {
             const btn = e.target.closest('.edit-btn');
             if (!btn) return;
@@ -413,19 +404,14 @@
             const row = btn.closest('tr');
             row.classList.add('editing');
 
-            // show forms
             row.querySelector('.save-form')?.classList.remove('d-none');
             row.querySelector('.delete-form')?.classList.remove('d-none');
             row.querySelector('.toggle-active-btn')?.classList.remove('d-none');
 
-            // show inputs, hide text
             row.querySelectorAll('.edit-input').forEach(i => i.style.display = 'block');
             row.querySelectorAll('.cell-text').forEach(s => s.style.display = 'none');
-
-            // make editable
             row.querySelectorAll('.edit-input').forEach(i => i.removeAttribute('readonly'));
 
-            // hide edit button
             btn.classList.add('d-none');
         });
 
@@ -435,22 +421,21 @@
             row.querySelector('.save-form')?.classList.add('d-none');
             row.querySelector('.delete-form')?.classList.add('d-none');
             row.querySelector('.toggle-active-btn')?.classList.add('d-none');
-
             row.querySelector('.edit-btn')?.classList.remove('d-none');
 
-            // LOCK inputs (correct behavior)
             row.querySelectorAll('.edit-input').forEach(input => {
                 input.setAttribute('readonly', true);
                 input.style.display = 'none';
             });
 
-            // show text
             row.querySelectorAll('.cell-text').forEach(span => {
                 span.style.display = '';
             });
         }
 
-
+        // ===============================
+        // SAVE BUTTON
+        // ===============================
         document.addEventListener('click', function (e) {
             const btn = e.target.closest('.save-btn');
             if (!btn) return;
@@ -472,7 +457,7 @@
                 id: id,
                 fullName: row.querySelector('input[name="FullName"]').value,
                 branch: row.querySelector('input[name="Branch"]').value,
-                department: document.getElementById('departmentBtn')?.dataset.value || "",  // FIX 1: added missing comma here
+                department: row.querySelector('input[name="Department"]').value,
                 assignedTelrad: telrad,
                 nearestTelrad: row.querySelector('input[name="NearestTelrad"]').value,
                 isMainHandler: row.querySelector('.main-handler-checkbox')?.checked || false
@@ -480,9 +465,7 @@
 
             fetch('/Employee/UpdateEmployee', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             })
             .then(r => {
@@ -495,26 +478,17 @@
             });
         });
 
-
-        function isTelradInactive(telrad) {
-            return [...document.querySelectorAll('#employeeTableBody tr')]
-                .some(r =>
-                    (r.dataset.assignedtelrad || "").toLowerCase() === telrad.toLowerCase() &&
-                    r.dataset.isactive === "false" &&
-                    r.dataset.assignedtelrad !== r.dataset.assignedtelrad  // never self-match
-                );
-        }
-
+        // ===============================
+        // TELRAD VALIDATION
+        // ===============================
         function telradExists(telrad, id) {
             const currentRow = [...document.querySelectorAll('#employeeTableBody tr')]
                 .find(r => r.querySelector('.save-form input[name="Id"]')?.value === id);
 
             const originalTelrad = currentRow?.dataset.assignedtelrad || "";
 
-            // If the telrad hasn't changed, never block it
             if (originalTelrad.toLowerCase() === telrad.toLowerCase()) return false;
 
-            // Only block if a *different* row has this telrad and it's a new assignment
             return [...document.querySelectorAll('#employeeTableBody tr')]
                 .some(r =>
                     r.dataset.assignedtelrad?.toLowerCase() === telrad.toLowerCase() &&
@@ -522,6 +496,9 @@
                 );
         }
 
+        // ===============================
+        // MAIN HANDLER CHECKBOX
+        // ===============================
         document.querySelectorAll('.main-handler-checkbox').forEach(cb => {
             cb.addEventListener('change', function () {
                 if (this.disabled) return;
@@ -557,7 +534,9 @@
             });
         });
 
-
+        // ===============================
+        // TOGGLE ACTIVE BUTTON
+        // ===============================
         document.querySelectorAll('.toggle-active-btn').forEach(btn => {
             btn.addEventListener('click', function () {
                 const employeeId = this.dataset.employeeid;
@@ -567,7 +546,6 @@
                 const row = this.closest('tr');
                 const assignedTelrad = row.dataset.assignedtelrad;
 
-                // ✅ Helper to apply UI state to a single row
                 function applyState(targetRow, state) {
                     const statusBadge = targetRow.querySelector('.status-badge');
                     const toggleBtn = targetRow.querySelector('.toggle-active-btn');
@@ -595,31 +573,26 @@
                     targetRow.dataset.isactive = state.toString();
                 }
 
-                // ✅ Find all rows sharing the same AssignedTelrad
                 const sharedRows = document.querySelectorAll(
                     `#employeeTableBody tr[data-assignedtelrad="${assignedTelrad}"]`
                 );
 
-                // ✅ Update all matching rows instantly
                 sharedRows.forEach(r => applyState(r, newState));
 
-                // ✅ Sync with server
                 fetch('/Employee/UpdateActiveStatus', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
                     },
-                    body: JSON.stringify({ EmployeeId: employeeId, IsActive: newState,AssignedTelrad: assignedTelrad })
+                    body: JSON.stringify({ EmployeeId: employeeId, IsActive: newState, AssignedTelrad: assignedTelrad })
                 }).then(resp => {
                     if (!resp.ok) {
-                        // ❌ Revert all matching rows if server fails
                         sharedRows.forEach(r => applyState(r, isActive));
                         alert('Failed to update status');
                     }
                 }).catch(err => {
                     console.error(err);
-                    // ❌ Revert all matching rows on network error
                     sharedRows.forEach(r => applyState(r, isActive));
                     alert('Error updating status');
                 });
@@ -629,7 +602,6 @@
         // ===============================
         // RESPONSE MODAL
         // ===============================
-
         const responseModal = document.getElementById('responseModal');
         const responseModalTitle = document.getElementById('responseModalTitle');
         const responseModalBody = document.getElementById('responseModalBody');
@@ -637,15 +609,12 @@
         const responseModalOk = document.getElementById('responseModalOk');
 
         function showModal(title, message, isSuccess = false) {
-
             responseModalTitle.textContent = title;
-
             responseModalBody.innerHTML = `
                 <div class="alert ${isSuccess ? 'alert-success' : 'alert-danger'} mb-0">
                     ${message}
                 </div>
             `;
-
             responseModal.style.display = 'flex';
         }
 
@@ -655,27 +624,23 @@
 
         closeResponseModal.addEventListener('click', closeModal);
         responseModalOk.addEventListener('click', closeModal);
-
         window.addEventListener('click', function (e) {
-            if (e.target === responseModal) {
-                closeModal();
-            }
+            if (e.target === responseModal) closeModal();
         });
-
 
         // ===============================
         // INLINE ADD AJAX
         // ===============================
-         if (inlineAddForm) {
+        if (inlineAddForm) {
             inlineAddForm.addEventListener('submit', async function (e) {
                 e.preventDefault();
 
                 const payload = {
-                    fullName: document.getElementById('searchFilter').value.trim(),
-                    branch: document.getElementById('branchFilter').value.trim(),
-                    department: document.getElementById('departmentBtn')?.dataset.value || "",  // FIX 2: was 'departmentFilter' which doesn't exist
-                    assignedTelrad: document.getElementById('telradFilter').value.trim(),
-                    nearestTelrad: this.querySelector('input[name="nearestTelrad"]').value.trim()
+                    fullName: searchFilter.value.trim(),
+                    branch: branchFilter.value.trim(),
+                    department: document.getElementById('departmentBtn')?.dataset.value || "",
+                    assignedTelrad: telradFilter.value.trim(),
+                    nearestTelrad: document.getElementById('addNearestTelrad').value.trim()
                 };
 
                 try {
@@ -700,7 +665,6 @@
                     showModal('Success', 'Employee added successfully.', true);
 
                     const tbody = document.getElementById('employeeTableBody');
-
                     const tr = document.createElement('tr');
 
                     tr.dataset.name = data.fullName || "";
@@ -719,7 +683,6 @@
                                    disabled />
                             <input type="hidden" class="main-handler-hidden" value="false">
                         </td>
-
                         <td class="text-start">${data.fullName}</td>
                         <td>${data.branch}</td>
                         <td>${data.department}</td>
@@ -732,7 +695,6 @@
 
                     tbody.appendChild(tr);
                     filterTable();
-
                     inlineAddForm.reset();
 
                 } catch (err) {

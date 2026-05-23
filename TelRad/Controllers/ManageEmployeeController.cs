@@ -99,12 +99,17 @@ namespace TelRad.Controllers
             employee.IsMainHandler = false;
 
             _context.Employees.Add(employee);
-
             await _context.SaveChangesAsync();
 
             return Ok(new
             {
-                success = true
+                success = true,
+                id = employee.Id,
+                fullName = employee.FullName,
+                branch = employee.Branch,
+                department = employee.Department,
+                assignedTelrad = employee.AssignedTelrad,
+                nearestTelrad = employee.NearestTelrad
             });
         }
 
