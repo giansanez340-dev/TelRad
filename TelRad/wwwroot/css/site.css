@@ -346,3 +346,14 @@ td.actions-column {
 select#departmentFilter option {
     padding: 6px;
 }
+
+.toggle-active-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.toggle-active-btn:not(:disabled):hover {
+    opacity: 1;
+}
+

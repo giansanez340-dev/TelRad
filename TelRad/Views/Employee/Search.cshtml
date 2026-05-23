@@ -21,7 +21,9 @@
                 <div class="card-body d-flex justify-content-between align-items-center">
                     <div>
                         <div class="text-muted small">Total Employees</div>
-                        <div class="fs-4 fw-bold">@Model.Select(x => x.FullName).Distinct().Count()</div>
+                        <div class="fs-4 fw-bold" id="countTotal">
+                            @Model.Select(x => x.FullName).Distinct().Count()
+                        </div>
                     </div>
                     <i class="bi bi-people-fill fs-2 text-primary"></i>
                 </div>
@@ -33,8 +35,9 @@
                 <div class="card-body d-flex justify-content-between align-items-center">
                     <div>
                         <div class="text-muted small">Active</div>
-                        <div class="fs-4 fw-bold text-success">
-                            @Model.Count(x => x.IsActive)
+                        <div class="fs-4 fw-bold text-success" id="countActive">
+                            @(Model.Where(x => x.IsActive && !string.IsNullOrEmpty(x.AssignedTelrad))
+                                                        .Select(x => x.AssignedTelrad).Distinct().Count())
                         </div>
                     </div>
                     <i class="bi bi-check-circle-fill fs-2 text-success"></i>
@@ -47,8 +50,9 @@
                 <div class="card-body d-flex justify-content-between align-items-center">
                     <div>
                         <div class="text-muted small">Inactive</div>
-                        <div class="fs-4 fw-bold text-danger">
-                            @Model.Count(x => !x.IsActive)
+                        <div class="fs-4 fw-bold text-danger" id="countInactive">
+                            @(Model.Where(x => !x.IsActive && !string.IsNullOrEmpty(x.AssignedTelrad))
+                                                        .Select(x => x.AssignedTelrad).Distinct().Count())
                         </div>
                     </div>
                     <i class="bi bi-x-circle-fill fs-2 text-danger"></i>
@@ -62,7 +66,6 @@
     <div class="card shadow-sm border-0">
         <div class="card-body">
 
-            <!-- FILTER HEADER -->
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h6 class="mb-0 fw-semibold">Filters & Management</h6>
             </div>
@@ -155,9 +158,10 @@
         <thead style="background:#17315e; color:white; align-items: center;">
             <tr>
                 <th style="width: 50px; text-align: center;">Main</th>
-                <th class="text-start" style="text-align: left;">Full Name</th>
+                <th class="text-start">Full Name</th>
                 <th>Branch</th>
                 <th>Department</th>
+                <th>Number</th>
                 <th>Assigned Telrad</th>
                 <th>Nearest Telrad</th>
                 <th>Status</th>
@@ -167,104 +171,126 @@
 
         <tbody id="employeeTableBody">
 
-            @foreach (var employee in Model)
+            @{
+                var grouped = Model.GroupBy(e => e.AssignedTelrad);
+            }
+
+            @foreach (var group in grouped)
             {
-                <tr data-name="@employee.FullName"
-                    data-branch="@employee.Branch"
-                    data-department="@employee.Department"
-                    data-assignedtelrad="@employee.AssignedTelrad"
-                    data-mainhandler="@(employee.IsMainHandler ? "true" : "false")"
-                    data-isactive="@(employee.IsActive ? "true" : "false")">
-                    <td>
-                        <input type="checkbox"
-                               class="main-handler-checkbox"
-                               data-telrad="@employee.AssignedTelrad"
-                               data-employeeid="@employee.Id"
-                               @(employee.IsMainHandler ? "checked" : "")
-                               disabled />
+                bool groupIsActive = group.First().IsActive;
+                int representativeId = group.First().Id;
 
-                        <input type="hidden"
-                               name="IsMainHandler"
-                               class="main-handler-hidden"
-                               data-mainhandler="@(employee.IsMainHandler ? "true" : "false")">
-                    </td>
-                    <td class="text-start">
-                        <span class="cell-text">@employee.FullName</span>
-                        <input class="form-control edit-input" name="FullName" value="@employee.FullName" />
-                    </td>
+                foreach (var employee in group)
+                {
+                    <tr data-name="@employee.FullName"
+                        data-branch="@employee.Branch"
+                        data-department="@employee.Department"
+                        data-assignedtelrad="@employee.AssignedTelrad"
+                        data-mainhandler="@(employee.IsMainHandler ? "true" : "false")"
+                        data-isactive="@(employee.IsActive ? "true" : "false")">
 
-                    <td>
-                        <span class="cell-text">@employee.Branch</span>
-                        <input class="form-control edit-input" name="Branch" value="@employee.Branch" />
-                    </td>
-
-                    <td>
-                        <span class="cell-text">@employee.Department</span>
-                        <input class="form-control edit-input" name="Department" value="@employee.Department" />
-                    </td>
-
-                    <td>
-                        <span class="cell-text">@employee.AssignedTelrad</span>
-                        <input class="form-control edit-input" name="AssignedTelrad" value="@employee.AssignedTelrad" />
-                    </td>
-
-                    <td>
-                        <span class="cell-text">@employee.NearestTelrad</span>
-                        <input class="form-control edit-input" name="NearestTelrad" value="@employee.NearestTelrad" />
-                    </td>
-
-                    <td>
-                        <span class="badge status-badge @(employee.IsActive ? "bg-success" : "bg-danger")">
-                            @(employee.IsActive ? "Active" : "Inactive")
-                        </span>
-                    </td>
-
-                    <!-- ACTIONS COLUMN -->
-                    @if (isAdmin)
-                    {
-                        <td class="actions-column">
-                            <div class="d-flex gap-2 justify-content-end">
-
-                                <!-- TOGGLE ACTIVE BUTTON -->
-                                <button type="button"
-                                        class="btn toggle-active-btn d-none @(employee.IsActive ? "active-state" : "")"
-                                        data-employeeid="@employee.Id"
-                                        data-isactive="@(employee.IsActive ? "true" : "false")"
-                                        title="@(employee.IsActive ? "Set Inactive" : "Set Active")">
-                                    <i class="bi @(employee.IsActive ? "bi-toggle-on text-success" : "bi-toggle-off text-danger")"></i>
-                                </button>
-
-                                <!-- EDIT BUTTON -->
-                                <button type="button" class="btn btn-warning edit-btn btn-sm">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-
-                                <!-- SAVE FORM -->
-                                <form asp-controller="Employee" asp-action="UpdateEmployee" method="post" class="d-none save-form">
-                                    <input type="hidden" name="Id" value="@employee.Id" />
-                                    <input type="hidden" name="IsMainHandler" class="main-handler-hidden" value="@employee.IsMainHandler" />
-                                    <input type="hidden" name="FullName" class="form-control edit-input" value="@employee.FullName" />
-                                    <input type="hidden" name="Branch" class="form-control edit-input" value="@employee.Branch" />
-                                    <input type="hidden" name="Department" class="form-control edit-input" value="@employee.Department" />
-                                    <input type="hidden" name="AssignedTelrad" class="form-control edit-input" value="@employee.AssignedTelrad" />
-                                    <input type="hidden" name="NearestTelrad" class="form-control edit-input" value="@employee.NearestTelrad" />
-                                    <button type="submit" class="btn btn-success save-btn btn-sm">Save</button>
-                                </form>
-
-                                <form asp-controller="employee"
-                                      asp-action="deleteemployee"
-                                      method="post"
-                                      class="d-none delete-form"
-                                      onsubmit="return confirm('delete this employee?');">
-                                    <input type="hidden" name="id" value="@employee.Id" />
-                                    <button type="submit" class="btn delete-btn btn-danger btn-sm">delete</button>
-                                </form>
-
-                            </div>
+                        <td>
+                            <input type="checkbox"
+                                   class="main-handler-checkbox"
+                                   data-telrad="@employee.AssignedTelrad"
+                                   data-employeeid="@employee.Id"
+                                   @(employee.IsMainHandler ? "checked" : "")
+                                   disabled />
+                            <input type="hidden"
+                                   name="IsMainHandler"
+                                   class="main-handler-hidden"
+                                   data-mainhandler="@(employee.IsMainHandler ? "true" : "false")">
                         </td>
-                    }
 
-                </tr>
+                        <td class="text-start">
+                            <span class="cell-text">@employee.FullName</span>
+                            <input class="form-control edit-input" name="FullName" value="@employee.FullName" />
+                        </td>
+
+                        <td>
+                            <span class="cell-text">@employee.Branch</span>
+                            <input class="form-control edit-input" name="Branch" value="@employee.Branch" />
+                        </td>
+
+                        <td>
+                            <span class="cell-text">
+                                @employee.Department
+                                @if (!string.IsNullOrEmpty(employee.Position))
+                                {
+                                    <br />
+                    
+                                    <small class="text-muted">@employee.Position</small>
+                                }
+                            </span>
+                            <input class="form-control edit-input" name="Department" value="@employee.Department" />
+                        </td>
+
+                        <td>
+                            <span class="cell-text">@employee.Number</span>
+                            <input class="form-control edit-input" name="Number" value="@employee.Number" />
+                        </td>
+
+                        <td>
+                            <span class="cell-text">@employee.AssignedTelrad</span>
+                            <input class="form-control edit-input" name="AssignedTelrad" value="@employee.AssignedTelrad" />
+                        </td>
+
+                        <td>
+                            <span class="cell-text">@employee.NearestTelrad</span>
+                            <input class="form-control edit-input" name="NearestTelrad" value="@employee.NearestTelrad" />
+                        </td>
+
+                        <td>
+                            <span class="badge status-badge @(groupIsActive ? "bg-success" : "bg-danger")">
+                                @(groupIsActive ? "Active" : "Inactive")
+                            </span>
+                        </td>
+
+                        @if (isAdmin)
+                        {
+                            <td class="actions-column">
+                                <div class="d-flex gap-2 justify-content-end">
+
+                                    <button type="button"
+                                            class="btn toggle-active-btn d-none @(groupIsActive ? "active-state" : "")"
+                                            data-employeeid="@representativeId"
+                                            data-isactive="@(groupIsActive ? "true" : "false")"
+                                            title="@(groupIsActive ? "Set Inactive" : "Set Active")">
+                                        <i class="bi @(groupIsActive ? "bi-toggle-on text-success" : "bi-toggle-off text-danger")"></i>
+                                    </button>
+
+                                    <button type="button" class="btn btn-warning edit-btn btn-sm">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+
+                                    <form asp-controller="Employee" asp-action="UpdateEmployee" method="post" class="d-none save-form">
+                                        <input type="hidden" name="Id" value="@employee.Id" />
+                                        <input type="hidden" name="IsMainHandler" class="main-handler-hidden" value="@employee.IsMainHandler" />
+                                        <input type="hidden" name="FullName" value="@employee.FullName" />
+                                        <input type="hidden" name="Branch" value="@employee.Branch" />
+                                        <input type="hidden" name="Department" value="@employee.Department" />
+                                        <input type="hidden" name="Position" value="@employee.Position" />
+                                        <input type="hidden" name="Number" value="@employee.Number" />
+                                        <input type="hidden" name="AssignedTelrad" value="@employee.AssignedTelrad" />
+                                        <input type="hidden" name="NearestTelrad" value="@employee.NearestTelrad" />
+                                        <button type="submit" class="btn btn-success save-btn btn-sm">Save</button>
+                                    </form>
+
+                                    <form asp-controller="employee"
+                                          asp-action="deleteemployee"
+                                          method="post"
+                                          class="d-none delete-form"
+                                          onsubmit="return confirm('delete this employee?');">
+                                        <input type="hidden" name="id" value="@employee.Id" />
+                                        <button type="submit" class="btn delete-btn btn-danger btn-sm">delete</button>
+                                    </form>
+
+                                </div>
+                            </td>
+                        }
+
+                    </tr>
+                }
             }
 
         </tbody>
@@ -314,10 +340,39 @@
         const inlineAddForm = document.getElementById('inlineAddForm');
 
         const departments = {
-            "Agoo": ["Operator","EXECOM","LEAF","SAMPLE ROOM","AGRONOMY","SSDG","ACCOUNTING","HUMAN RESOURCES","INFORMATION TECHNOLOGY","BUYING LINE","CLINIC","CDF","OPERATION ACCOUNTING","LEAF ACCOUNTING","TREASURY","PROCUREMENT & SHIPPING","LEGAL","CORPORATE AFFAIRS","BLENDING LINE","QUALITY CONTROL","ENGINEERING","EHSS","FINISHED GOODS","PRODUCTION","SCALEHOUSE","TRAFFIC MANAGEMENT GROUP","GREEN LEAF LOGISTIC","SAN JACINTO"],
-            "Candon": ["EXECOM","OPERATIONS ACCOUNTING","INFORMATION TECHNOLOGY","HUMAN RESOURCE","TREASURY","PROCUREMENT & SHIPPING","GLLM","GLLM & TMG CURRIMAO","ACCOUNTING CURRIMAO","TREASURY CURRIMAO","ADMIN & LOGISTICS","ENGINEERING","GUARD","MANAGERS","RISK MANAGEMENT","SSDG","BUYING","FRU","RTF","AGRONOMY","FRA CURRIMAO","STA CRUZ WAREHOUSE"],
-            "RM": ["Operator","GENERAL ACCOUNTING","LEAF ACCOUNTING","OPERATIONS ACCOUNTING","FILLING ROOM","INFORMATION TECHNOLOGY","TREASURY","PROCUREMENT & SHIPPING","LEGAL","CORPORATE AFFAIRS","PROJECT MANAGERS","AGRONOMY","TOBACCO WRAPPER","SSDG","COMPLIANCE","FRA","HUMAN RESOURCES","HR","EHSS","TRAFFIC AND LOGISTICS","CLINIC","GUARD","GO DIRECTOR R2","AGRONOMY DIRECTOR","RTF","GUEST HOUSE"],
-            "Pasig": ["Operator","EXECOM","CONFERENCE","PROCUREMENT & SHIPPING","TREASURY","OTHERS","PANTRY","CORPORATE AFFAIRS"]
+            "Agoo": [
+                "ACCOUNTING", "AGRONOMY", "CORPORATE AFFAIRS AND COMPLIANCE", "ENGINEERING",
+                "ENVIRONMENT, HEALTH, SAFETY AND SECURITY", "FINISHED GOODS I", "GO REGION I",
+                "GREEN LEAF LOGISTICS", "GROWING", "HUMAN RESOURCE MANAGEMENT",
+                "INFORMATION TECHNOLOGY DEPARTMENT", "LEAF OPERATIONS I", "LEAF OPERATIONS II",
+                "LEGAL SERVICES, ENTERPRISE RISK MANAGEMENT, AUDIT GROUP, AND DATA PROTECTION AND MANAGEMENT",
+                "PROCUREMENT AND SHIPPING", "PRODUCTION I", "QUALITY CONTROL", "SALES",
+                "SYSTEMS AND STANDARDS DEVELOPMENT GROUP", "TAX COMPLIANCE",
+                "TRAFFIC MANAGEMENT GROUP", "TREASURY"
+            ],
+            "Candon": [
+                "ACCOUNTING", "AGRONOMY", "ENGINEERING", "ENVIRONMENT, HEALTH, SAFETY AND SECURITY",
+                "GO REGION I", "GREEN LEAF LOGISTICS", "HUMAN RESOURCE MANAGEMENT",
+                "INFORMATION TECHNOLOGY DEPARTMENT", "LEAF OPERATIONS I",
+                "LEGAL SERVICES, ENTERPRISE RISK MANAGEMENT, AUDIT GROUP, AND DATA PROTECTION AND MANAGEMENT",
+                "PROCUREMENT AND SHIPPING", "SYSTEMS AND STANDARDS DEVELOPMENT GROUP",
+                "TAX COMPLIANCE", "TRAFFIC MANAGEMENT GROUP", "TREASURY"
+            ],
+            "RM": [
+                "ACCOUNTING", "AGRONOMY", "CORPORATE AFFAIRS AND COMPLIANCE", "ENGINEERING",
+                "ENVIRONMENT, HEALTH, SAFETY AND SECURITY", "EXTERNAL AFFAIRS AND OPERATIONS",
+                "FINISHED GOODS II", "GO REGION II", "GREEN LEAF LOGISTICS",
+                "HUMAN RESOURCE MANAGEMENT", "INFORMATION TECHNOLOGY DEPARTMENT", "LEAF OPERATIONS II",
+                "LEGAL SERVICES, ENTERPRISE RISK MANAGEMENT, AUDIT GROUP, AND DATA PROTECTION AND MANAGEMENT",
+                "PRECISION AGRICULTURE", "PROCUREMENT AND SHIPPING", "PRODUCTION II",
+                "QUALITY CONTROL", "SYSTEMS AND STANDARDS DEVELOPMENT GROUP", "TAX COMPLIANCE",
+                "TRAFFIC MANAGEMENT GROUP", "TREASURY"
+            ],
+            "Pasig": [
+                "CORPORATE AFFAIRS AND COMPLIANCE", "INFORMATION TECHNOLOGY DEPARTMENT",
+                "LEGAL SERVICES, ENTERPRISE RISK MANAGEMENT, AUDIT GROUP, AND DATA PROTECTION AND MANAGEMENT",
+                "PROCUREMENT AND SHIPPING", "SALES", "TREASURY"
+            ]
         };
 
         // ===============================
@@ -387,6 +442,36 @@
             });
         }
 
+        // ===============================
+        // UPDATE DASHBOARD CARDS
+        // ===============================
+        function updateDashboard() {
+            const rows = document.querySelectorAll('#employeeTableBody tr');
+            const seenEmployees = new Set();
+            const activeTelrads = new Set();
+            const inactiveTelrads = new Set();
+
+            rows.forEach(row => {
+                const telrad = (row.dataset.assignedtelrad || "").trim();
+                const isActive = row.dataset.isactive === 'true';
+                const name = (row.dataset.name || "").trim();
+
+                if (name) seenEmployees.add(name);
+
+                if (telrad) {
+                    if (isActive) {
+                        activeTelrads.add(telrad);
+                    } else {
+                        inactiveTelrads.add(telrad);
+                    }
+                }
+            });
+
+            document.getElementById('countTotal').textContent = seenEmployees.size;
+            document.getElementById('countActive').textContent = activeTelrads.size;
+            document.getElementById('countInactive').textContent = inactiveTelrads.size;
+        }
+
         searchFilter.addEventListener('input', filterTable);
         telradFilter?.addEventListener('input', filterTable);
         branchFilter.addEventListener('change', function () {
@@ -395,7 +480,31 @@
         });
 
         // ===============================
-        // EDIT BUTTON
+        // SHARED: applyState helper
+        // ===============================
+        function applyState(targetRow, state) {
+            const statusBadge = targetRow.querySelector('.status-badge');
+            const toggleBtn = targetRow.querySelector('.toggle-active-btn');
+            const icon = toggleBtn ? toggleBtn.querySelector('i') : null;
+
+            if (statusBadge) {
+                statusBadge.textContent = state ? 'Active' : 'Inactive';
+                statusBadge.className = 'badge status-badge ' + (state ? 'bg-success' : 'bg-danger');
+            }
+            if (toggleBtn) {
+                toggleBtn.dataset.isactive = state.toString();
+                toggleBtn.title = state ? 'Set Inactive' : 'Set Active';
+                toggleBtn.classList.toggle('active-state', state);
+            }
+            if (icon) {
+                icon.className = state ? 'bi bi-toggle-on text-success' : 'bi bi-toggle-off text-danger';
+            }
+
+            targetRow.dataset.isactive = state.toString();
+        }
+
+        // ===============================
+        // EDIT BUTTON (delegated)
         // ===============================
         document.addEventListener('click', function (e) {
             const btn = e.target.closest('.edit-btn');
@@ -407,10 +516,12 @@
             row.querySelector('.save-form')?.classList.remove('d-none');
             row.querySelector('.delete-form')?.classList.remove('d-none');
             row.querySelector('.toggle-active-btn')?.classList.remove('d-none');
+            row.querySelectorAll('.main-handler-checkbox').forEach(cb => {
+                cb.removeAttribute('disabled');
+            });
 
-            row.querySelectorAll('.edit-input').forEach(i => i.style.display = 'block');
+            row.querySelectorAll('.edit-input').forEach(i => { i.style.display = 'block'; i.removeAttribute('readonly'); });
             row.querySelectorAll('.cell-text').forEach(s => s.style.display = 'none');
-            row.querySelectorAll('.edit-input').forEach(i => i.removeAttribute('readonly'));
 
             btn.classList.add('d-none');
         });
@@ -423,6 +534,10 @@
             row.querySelector('.toggle-active-btn')?.classList.add('d-none');
             row.querySelector('.edit-btn')?.classList.remove('d-none');
 
+            row.querySelectorAll('.main-handler-checkbox').forEach(cb => {
+                cb.setAttribute('disabled', '');
+            });
+
             row.querySelectorAll('.edit-input').forEach(input => {
                 input.setAttribute('readonly', true);
                 input.style.display = 'none';
@@ -434,7 +549,7 @@
         }
 
         // ===============================
-        // SAVE BUTTON
+        // SAVE BUTTON (delegated) - FIXED
         // ===============================
         document.addEventListener('click', function (e) {
             const btn = e.target.closest('.save-btn');
@@ -445,19 +560,19 @@
 
             e.preventDefault();
 
-            const telrad = row.querySelector('input[name="AssignedTelrad"]').value.trim();
             const id = form.querySelector('input[name="Id"]').value;
+            const telrad = row.querySelector('input[name="AssignedTelrad"]').value.trim();
 
-            if (telradExists(telrad, id)) {
-                alert("This Telrad is already assigned to another employee.");
-                return;
-            }
+            // No client-side telrad validation—let server handle it
+            // Multiple active employees CAN share the same telrad
 
             const payload = {
                 id: id,
                 fullName: row.querySelector('input[name="FullName"]').value,
                 branch: row.querySelector('input[name="Branch"]').value,
                 department: row.querySelector('input[name="Department"]').value,
+                position: row.querySelector('input[name="Position"]').value,
+                number: row.querySelector('input[name="Number"]').value,
                 assignedTelrad: telrad,
                 nearestTelrad: row.querySelector('input[name="NearestTelrad"]').value,
                 isMainHandler: row.querySelector('.main-handler-checkbox')?.checked || false
@@ -465,138 +580,158 @@
 
             fetch('/Employee/UpdateEmployee', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                },
                 body: JSON.stringify(payload)
             })
-            .then(r => {
-                if (!r.ok) throw new Error("Save failed");
+            .then(async r => {
+                const data = await r.json().catch(() => ({}));
+                
+                if (!r.ok) {
+                    throw new Error(data.error || 'Save failed');
+                }
+
+                const toggleBtn = row.querySelector('.toggle-active-btn');
+                const currentIsActive = toggleBtn
+                    ? toggleBtn.dataset.isactive === 'true'
+                    : row.dataset.isactive === 'true';
+
+                const oldTelrad = row.dataset.assignedtelrad;
+                document.querySelectorAll(`#employeeTableBody tr[data-assignedtelrad="${oldTelrad}"]`)
+                    .forEach(sharedRow => applyState(sharedRow, currentIsActive));
+
+                row.dataset.name = payload.fullName;
+                row.dataset.branch = payload.branch;
+                row.dataset.department = payload.department;
+                row.dataset.assignedtelrad = payload.assignedTelrad;
+
+                // Update cell-text properly
+                row.querySelector('td:nth-child(2) .cell-text').textContent = payload.fullName;
+                row.querySelector('td:nth-child(3) .cell-text').textContent = payload.branch;
+                
+                const deptCell = row.querySelector('td:nth-child(4) .cell-text');
+                deptCell.innerHTML = payload.position 
+                    ? `${payload.department}<br/><small class="text-muted">${payload.position}</small>` 
+                    : payload.department;
+                
+                row.querySelector('td:nth-child(5) .cell-text').textContent = payload.number;
+                row.querySelector('td:nth-child(6) .cell-text').textContent = payload.assignedTelrad;
+                row.querySelector('td:nth-child(7) .cell-text').textContent = payload.nearestTelrad;
+
                 exitEditMode(row);
+                updateDashboard();
             })
             .catch(err => {
                 console.error(err);
-                alert("Save failed");
+                alert('Save failed: ' + err.message);
             });
         });
 
         // ===============================
         // TELRAD VALIDATION
         // ===============================
-        function telradExists(telrad, id) {
-            const currentRow = [...document.querySelectorAll('#employeeTableBody tr')]
-                .find(r => r.querySelector('.save-form input[name="Id"]')?.value === id);
-
-            const originalTelrad = currentRow?.dataset.assignedtelrad || "";
-
-            if (originalTelrad.toLowerCase() === telrad.toLowerCase()) return false;
-
-            return [...document.querySelectorAll('#employeeTableBody tr')]
-                .some(r =>
-                    r.dataset.assignedtelrad?.toLowerCase() === telrad.toLowerCase() &&
-                    r.querySelector('.save-form input[name="Id"]')?.value !== id
-                );
-        }
+        // function telradExists(telrad, id) {
+        //     // Removed: Server now validates (inactive telrad blocking only)
+        // }
 
         // ===============================
-        // MAIN HANDLER CHECKBOX
+        // MAIN HANDLER CHECKBOX (delegated)
         // ===============================
-        document.querySelectorAll('.main-handler-checkbox').forEach(cb => {
-            cb.addEventListener('change', function () {
-                if (this.disabled) return;
+        document.addEventListener('change', function (e) {
+            const cb = e.target.closest('.main-handler-checkbox');
+            if (!cb || cb.disabled) return;
 
-                const telrad = this.dataset.telrad;
-                const employeeId = this.dataset.employeeid;
+            const telrad = cb.dataset.telrad;
+            const employeeId = cb.dataset.employeeid;
 
-                document.querySelectorAll(`.main-handler-checkbox[data-telrad="${telrad}"]`).forEach(other => {
-                    if (other !== this) {
-                        other.checked = false;
-                        const hidden = other.closest('tr').querySelector('.main-handler-hidden');
-                        if (hidden) hidden.value = "false";
-                    }
-                });
+            document.querySelectorAll(`.main-handler-checkbox[data-telrad="${telrad}"]`).forEach(other => {
+                if (other !== cb) {
+                    other.checked = false;
+                    const hidden = other.closest('tr').querySelector('.main-handler-hidden');
+                    if (hidden) hidden.value = "false";
+                }
+            });
 
-                fetch('/Employee/UpdateMainHandler', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
-                    },
-                    body: JSON.stringify({
-                        EmployeeId: employeeId,
-                        IsMainHandler: this.checked,
-                        AssignedTelrad: telrad
-                    })
-                }).then(resp => {
-                    if (!resp.ok) alert('Failed to update main handler');
-                }).catch(err => {
-                    console.error(err);
-                    alert('Error updating main handler');
-                });
+            fetch('/Employee/UpdateMainHandler', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                },
+                body: JSON.stringify({
+                    EmployeeId: employeeId,
+                    IsMainHandler: cb.checked,
+                    AssignedTelrad: telrad
+                })
+            }).then(resp => {
+                if (!resp.ok) {
+                    resp.text().then(t => {
+                        console.error('UpdateMainHandler failed:', resp.status, t);
+                        alert('Failed to update main handler: ' + (t || resp.status));
+                    });
+                }
+            }).catch(err => {
+                console.error(err);
+                alert('Error updating main handler');
             });
         });
 
         // ===============================
-        // TOGGLE ACTIVE BUTTON
+        // TOGGLE ACTIVE BUTTON (delegated)
+        // Improved: show server error details and preserve UI on failure
         // ===============================
-        document.querySelectorAll('.toggle-active-btn').forEach(btn => {
-            btn.addEventListener('click', function () {
-                const employeeId = this.dataset.employeeid;
-                const isActive = this.dataset.isactive === 'true';
-                const newState = !isActive;
+        document.addEventListener('click', async function (e) {
+            const btn = e.target.closest('.toggle-active-btn');
+            if (!btn) return;
 
-                const row = this.closest('tr');
-                const assignedTelrad = row.dataset.assignedtelrad;
+            const employeeId = btn.dataset.employeeid;
+            const isActive = btn.dataset.isactive === 'true';
+            const newState = !isActive;
 
-                function applyState(targetRow, state) {
-                    const statusBadge = targetRow.querySelector('.status-badge');
-                    const toggleBtn = targetRow.querySelector('.toggle-active-btn');
-                    const icon = toggleBtn ? toggleBtn.querySelector('i') : null;
+            const row = btn.closest('tr');
+            const assignedTelrad = row.dataset.assignedtelrad;
 
-                    if (statusBadge) {
-                        statusBadge.textContent = state ? 'Active' : 'Inactive';
-                        statusBadge.className = 'badge status-badge ' + (state ? 'bg-success' : 'bg-danger');
-                    }
+            const sharedRows = document.querySelectorAll(
+                `#employeeTableBody tr[data-assignedtelrad="${assignedTelrad}"]`
+            );
 
-                    if (toggleBtn) {
-                        toggleBtn.dataset.isactive = state.toString();
-                        toggleBtn.title = state ? 'Set Inactive' : 'Set Active';
-                        if (state) {
-                            toggleBtn.classList.add('active-state');
-                        } else {
-                            toggleBtn.classList.remove('active-state');
-                        }
-                    }
+            // Optimistically update UI
+            sharedRows.forEach(r => applyState(r, newState));
 
-                    if (icon) {
-                        icon.className = state ? 'bi bi-toggle-on text-success' : 'bi bi-toggle-off text-danger';
-                    }
-
-                    targetRow.dataset.isactive = state.toString();
-                }
-
-                const sharedRows = document.querySelectorAll(
-                    `#employeeTableBody tr[data-assignedtelrad="${assignedTelrad}"]`
-                );
-
-                sharedRows.forEach(r => applyState(r, newState));
-
-                fetch('/Employee/UpdateActiveStatus', {
+            try {
+                const resp = await fetch('/Employee/UpdateActiveStatus', {
                     method: 'POST',
+                    credentials: 'same-origin',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json',
                         'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
                     },
                     body: JSON.stringify({ EmployeeId: employeeId, IsActive: newState, AssignedTelrad: assignedTelrad })
-                }).then(resp => {
-                    if (!resp.ok) {
-                        sharedRows.forEach(r => applyState(r, isActive));
-                        alert('Failed to update status');
-                    }
-                }).catch(err => {
-                    console.error(err);
-                    sharedRows.forEach(r => applyState(r, isActive));
-                    alert('Error updating status');
                 });
-            });
+
+                const text = await resp.text();
+
+                if (!resp.ok) {
+                    console.error('UpdateActiveStatus failed', resp.status, text);
+                    // revert UI
+                    sharedRows.forEach(r => applyState(r, isActive));
+                    // show detailed error to help debugging
+                    showModal('Error', `Failed to update status (${resp.status}): ${text || 'no details returned'}`);
+                    return;
+                }
+
+                // success
+                updateDashboard();
+            } catch (err) {
+                console.error('UpdateActiveStatus error', err);
+                sharedRows.forEach(r => applyState(r, isActive));
+                showModal('Error', 'Error updating status: ' + (err && err.message ? err.message : String(err)));
+            }
         });
 
         // ===============================
@@ -646,6 +781,7 @@
                 try {
                     const response = await fetch('/ManageEmployee/AddEmployee', {
                         method: 'POST',
+                        credentials: 'same-origin',
                         headers: {
                             'Content-Type': 'application/json',
                             'RequestVerificationToken':
@@ -683,18 +819,73 @@
                                    disabled />
                             <input type="hidden" class="main-handler-hidden" value="false">
                         </td>
-                        <td class="text-start">${data.fullName}</td>
-                        <td>${data.branch}</td>
-                        <td>${data.department}</td>
-                        <td>${data.assignedTelrad}</td>
-                        <td>${data.nearestTelrad}</td>
+                        <td class="text-start">
+                            <span class="cell-text">${data.fullName}</span>
+                            <input class="form-control edit-input" name="FullName" value="${data.fullName}" style="display:none;" />
+                        </td>
+                        <td>
+                            <span class="cell-text">${data.branch}</span>
+                            <input class="form-control edit-input" name="Branch" value="${data.branch}" style="display:none;" />
+                        </td>
+                        <td>
+                            <span class="cell-text">${data.department}</span>
+                            <input class="form-control edit-input" name="Department" value="${data.department}" style="display:none;" />
+                        </td>
+                        <td>
+                            <span class="cell-text">${data.position || ""}</span>
+                            <input class="form-control edit-input" name="Position" value="${data.position || ""}" style="display:none;" />
+                        </td>
+                        <td>
+                            <span class="cell-text">${data.number || ""}</span>
+                            <input class="form-control edit-input" name="Number" value="${data.number || ""}" style="display:none;" />
+                        </td>
+                        <td>
+                            <span class="cell-text">${data.assignedTelrad}</span>
+                            <input class="form-control edit-input" name="AssignedTelrad" value="${data.assignedTelrad}" style="display:none;" />
+                        </td>
+                        <td>
+                            <span class="cell-text">${data.nearestTelrad}</span>
+                            <input class="form-control edit-input" name="NearestTelrad" value="${data.nearestTelrad}" style="display:none;" />
+                        </td>
                         <td>
                             <span class="badge status-badge bg-success">Active</span>
+                        </td>
+                        <td class="actions-column">
+                            <div class="d-flex gap-2 justify-content-end">
+                                <button type="button"
+                                        class="btn toggle-active-btn d-none active-state"
+                                        data-employeeid="${data.id}"
+                                        data-isactive="true"
+                                        title="Set Inactive">
+                                    <i class="bi bi-toggle-on text-success"></i>
+                                </button>
+                                <button type="button" class="btn btn-warning edit-btn btn-sm">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <form action="/Employee/UpdateEmployee" method="post" class="d-none save-form">
+                                    <input type="hidden" name="Id" value="${data.id}" />
+                                    <input type="hidden" name="IsMainHandler" class="main-handler-hidden" value="false" />
+                                    <input type="hidden" name="FullName" value="${data.fullName}" />
+                                    <input type="hidden" name="Branch" value="${data.branch}" />
+                                    <input type="hidden" name="Department" value="${data.department}" />
+                                    <input type="hidden" name="Position" value="${data.position || ""}" />
+                                    <input type="hidden" name="Number" value="${data.number || ""}" />
+                                    <input type="hidden" name="AssignedTelrad" value="${data.assignedTelrad}" />
+                                    <input type="hidden" name="NearestTelrad" value="${data.nearestTelrad}" />
+                                    <button type="submit" class="btn btn-success save-btn btn-sm">Save</button>
+                                </form>
+                                <form action="/employee/deleteemployee" method="post" class="d-none delete-form"
+                                      onsubmit="return confirm('delete this employee?');">
+                                    <input type="hidden" name="id" value="${data.id}" />
+                                    <button type="submit" class="btn delete-btn btn-danger btn-sm">delete</button>
+                                </form>
+                            </div>
                         </td>
                     `;
 
                     tbody.appendChild(tr);
                     filterTable();
+                    updateDashboard();
                     inlineAddForm.reset();
 
                 } catch (err) {

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TelRad.Data;
 using TelRad.Models;
+using static TelRad.Controllers.EmployeeController;
 
 namespace TelRad.Controllers
 {
@@ -139,30 +140,6 @@ namespace TelRad.Controllers
             await _context.SaveChangesAsync();
 
             return Ok();
-        }
-
-        // =========================
-        // TOGGLE ACTIVE (GROUP FIXED + PERSISTENT)
-        // =========================
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UpdateActiveStatus([FromBody] ToggleActiveDto dto)
-        {
-            var employees = await _context.Employees
-                .Where(e => e.AssignedTelrad == dto.AssignedTelrad)
-                .ToListAsync();
-
-            if (!employees.Any())
-                return NotFound();
-
-            foreach (var emp in employees)
-            {
-                emp.IsActive = dto.IsActive;
-            }
-
-            await _context.SaveChangesAsync();
-
-            return Ok(new { success = true });
         }
     }
 }

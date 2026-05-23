@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using TelRad.Data;
 using TelRad.Models;
@@ -91,22 +92,40 @@ namespace TelRad.Controllers
         }
 
         [HttpPost]
-        public IActionResult UpdateEmployee(Employee model)
+        public IActionResult UpdateEmployee([FromBody] UpdateEmployeeRequest model)
         {
-            var employee = _context.Employees.FirstOrDefault(e => e.Id == model.Id);
-            if (employee != null)
-            {
-                employee.FullName = model.FullName;
-                employee.Branch = model.Branch;
-                employee.Department = model.Department;
-                employee.AssignedTelrad = model.AssignedTelrad;
-                employee.NearestTelrad = model.NearestTelrad;
-                employee.IsMainHandler = model.IsMainHandler; // now it will be true if checkbox checked
+            if (model == null) return BadRequest();
 
-                _context.SaveChanges();
+            var employee = _context.Employees.FirstOrDefault(e => e.Id == model.Id);
+            if (employee == null) return NotFound();
+
+            // Check if telrad is being changed
+            var telradChanged = employee.AssignedTelrad?.ToLower() != model.AssignedTelrad?.ToLower();
+
+            if (telradChanged && !string.IsNullOrWhiteSpace(model.AssignedTelrad))
+            {
+                // Check if the new telrad exists and is inactive
+                var telradInactive = _context.Employees
+                    .Where(e => e.AssignedTelrad == model.AssignedTelrad && !e.IsActive)
+                    .Any();
+
+                if (telradInactive)
+                {
+                    return BadRequest(new { error = "This Telrad is inactive and cannot be assigned." });
+                }
             }
 
-            return RedirectToAction("Search");
+            employee.FullName = model.FullName;
+            employee.Branch = model.Branch;
+            employee.Department = model.Department;
+            employee.Position = model.Position;
+            employee.Number = model.Number;
+            employee.AssignedTelrad = model.AssignedTelrad;
+            employee.NearestTelrad = model.NearestTelrad;
+            employee.IsMainHandler = model.IsMainHandler;
+
+            _context.SaveChanges();
+            return Ok();
         }
 
         [HttpPost]
@@ -131,6 +150,20 @@ namespace TelRad.Controllers
                 return RedirectToAction("Search");
             }
 
+            // Check if telrad is inactive
+            if (!string.IsNullOrWhiteSpace(assignedTelrad))
+            {
+                var telradInactive = _context.Employees
+                    .Where(e => e.AssignedTelrad == assignedTelrad.Trim() && !e.IsActive)
+                    .Any();
+
+                if (telradInactive)
+                {
+                    TempData["Error"] = "This Telrad is inactive and cannot be assigned.";
+                    return RedirectToAction("Search");
+                }
+            }
+
             var employee = new Employee
             {
                 FullName = normalizedFullName,
@@ -152,7 +185,6 @@ namespace TelRad.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult UpdateMainHandler([FromBody] MainHandlerUpdateModel model)
         {
-            // Unset all employees for this AssignedTelrad
             var employees = _context.Employees
                                     .Where(e => e.AssignedTelrad == model.AssignedTelrad)
                                     .ToList();
@@ -168,20 +200,59 @@ namespace TelRad.Controllers
 
         [HttpPost]
         [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateActiveStatus([FromBody] UpdateActiveStatusRequest request)
         {
-            var employee = await _context.Employees.FindAsync(request.EmployeeId);
-            if (employee == null) return NotFound();
+            if (request == null) return BadRequest();
 
-            employee.IsActive = request.IsActive;
+            var assignedTelrad = request.AssignedTelrad?.Trim();
+            if (string.IsNullOrWhiteSpace(assignedTelrad) && request.EmployeeId > 0)
+            {
+                var emp = await _context.Employees.FindAsync(request.EmployeeId);
+                if (emp != null)
+                {
+                    assignedTelrad = emp.AssignedTelrad;
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(assignedTelrad))
+            {
+                return BadRequest(new { error = "AssignedTelrad is required." });
+            }
+
+            var employees = await _context.Employees
+                .Where(e => e.AssignedTelrad == assignedTelrad)
+                .ToListAsync();
+
+            if (!employees.Any()) return NotFound();
+
+            foreach (var emp in employees)
+            {
+                emp.IsActive = request.IsActive;
+            }
+
             await _context.SaveChangesAsync();
             return Ok();
+        }
+
+        public class UpdateEmployeeRequest
+        {
+            public int Id { get; set; }
+            public string FullName { get; set; } = "";
+            public string Branch { get; set; } = "";
+            public string Department { get; set; } = "";
+            public string Position { get; set; } = "";
+            public string Number { get; set; } = "";
+            public string AssignedTelrad { get; set; } = "";
+            public string NearestTelrad { get; set; } = "";
+            public bool IsMainHandler { get; set; }
         }
 
         public class UpdateActiveStatusRequest
         {
             public int EmployeeId { get; set; }
             public bool IsActive { get; set; }
+            public string AssignedTelrad { get; set; } = "";
         }
     }
 }

@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;
-
 namespace TelRad.Models
 {
     public class Employee
@@ -19,7 +18,12 @@ namespace TelRad.Models
 
         public string? NearestTelrad { get; set; } = "";
 
+        public string? Number { get; set; } = "";
+
+        public string? Position { get; set; } = "";
+
         public bool IsMainHandler { get; set; } = false;
+
         public bool IsActive { get; set; } = true;
     }
 }
