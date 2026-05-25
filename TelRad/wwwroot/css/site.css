@@ -8,7 +8,7 @@ html {
 
 @media (min-width: 768px) {
     html {
-        font-size: 16px;
+        font-size: 20px !important;
     }
 }
 
@@ -357,3 +357,24 @@ select#departmentFilter option {
     opacity: 1;
 }
 
+.container-fluid {
+    max-width: 95% !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+#paginationControls .page-btn {
+    background: white !important;
+    color: #17315e !important;
+    border: 1px solid #17315e !important;
+}
+
+    #paginationControls .page-btn:hover:not(:disabled) {
+        background: #17315e !important;
+        color: white !important;
+    }
+
+    #paginationControls .page-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }

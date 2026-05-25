@@ -44,6 +44,36 @@ namespace TelRad.Controllers
             employee.AssignedTelrad = (employee.AssignedTelrad ?? "").Trim();
             employee.NearestTelrad = (employee.NearestTelrad ?? "").Trim();
 
+            // =========================================
+            // FUZZY DUPLICATE NAME CHECK
+            // =========================================
+
+            string[] Tokenize(string name) =>
+                name.ToUpperInvariant()
+                    .Split(new char[] { ' ', ',', '.', '-' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Where(t => t.Length > 1) // ignore single initials like "P"
+                    .ToArray();
+
+            var incomingTokens = Tokenize(employee.FullName ?? "").ToHashSet();
+
+            var allNames = await _context.Employees
+                .Select(e => e.FullName)
+                .Distinct()
+                .ToListAsync();
+
+            var similarName = allNames.FirstOrDefault(existing => {
+                var existingTokens = Tokenize(existing ?? "").ToHashSet();
+                return incomingTokens.Intersect(existingTokens).Count() >= 2;
+            });
+
+            if (similarName != null)
+            {
+                return Conflict(new
+                {
+                    error = $"A similar name already exists: \"{similarName}\". Please verify before adding."
+                });
+            }
+
             // REQUIRED ONLY FOR TELRAD
             if (string.IsNullOrWhiteSpace(employee.AssignedTelrad))
             {
