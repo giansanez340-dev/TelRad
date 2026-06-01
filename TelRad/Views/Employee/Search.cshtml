@@ -115,11 +115,11 @@
             <!-- ADD EMPLOYEE -->
             <hr class="my-4">
 
-            <form id="inlineAddForm" class="row g-3 align-items-end">
+            <form id="inlineAddForm" class="row g-2 align-items-end">
 
                 @Html.AntiForgeryToken()
 
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label text-muted small">Assigned Telrad</label>
                     <input type="text"
                            id="telradFilter"
@@ -127,7 +127,7 @@
                            placeholder="Filter by assigned telrad">
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label text-muted small">Nearest Telrad</label>
                     <input type="text"
                            id="addNearestTelrad"
@@ -136,18 +136,25 @@
                            placeholder="Enter nearest number">
                 </div>
 
+                <div class="col-md-3">
+                    <label class="form-label text-muted small">Position</label>
+                    <input type="text"
+                           id="addPosition"
+                           name="position"
+                           class="form-control"
+                           placeholder="Enter position">
+                </div>
+
                 @if (isAdmin)
                 {
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <button type="submit" class="btn btn-primary w-100 fw-semibold">
                             <i class="bi bi-plus-lg me-1"></i> Add Employee
                         </button>
                     </div>
                 }
 
-
             </form>
-
         </div>
     </div>
 
@@ -575,17 +582,14 @@
             // No client-side telrad validation—let server handle it
             // Multiple active employees CAN share the same telrad
 
-            const payload = {
-                id: id,
-                fullName: row.querySelector('input[name="FullName"]').value,
-                branch: row.querySelector('input[name="Branch"]').value,
-                department: row.querySelector('input[name="Department"]').value,
-                position: row.querySelector('input[name="Position"]').value,
-                number: row.querySelector('input[name="Number"]').value,
-                assignedTelrad: telrad,
-                nearestTelrad: row.querySelector('input[name="NearestTelrad"]').value,
-                isMainHandler: row.querySelector('.main-handler-checkbox')?.checked || false
-            };
+        const payload = {
+            fullName: searchFilter.value.trim(),
+            branch: branchFilter.value.trim(),
+            department: document.getElementById('departmentBtn')?.dataset.value || "",
+            assignedTelrad: telradFilter.value.trim(),
+            nearestTelrad: document.getElementById('addNearestTelrad').value.trim(),
+            position: document.getElementById('addPosition').value.trim()
+        };
 
             fetch('/Employee/UpdateEmployee', {
                 method: 'POST',
@@ -796,15 +800,29 @@
         // ===============================
         if (inlineAddForm) {
             inlineAddForm.addEventListener('submit', async function (e) {
+
                 e.preventDefault();
 
-                const payload = {
-                    fullName: searchFilter.value.trim(),
-                    branch: branchFilter.value.trim(),
-                    department: document.getElementById('departmentBtn')?.dataset.value || "",
-                    assignedTelrad: telradFilter.value.trim(),
-                    nearestTelrad: document.getElementById('addNearestTelrad').value.trim()
-                };
+
+                        // ADD this block right after e.preventDefault(); at the top of the submit handler:
+        const positionVal = document.getElementById('addPosition').value.trim();
+
+        if (!positionVal) {
+            showModal('Validation Error', 'Position is required.');
+            document.getElementById('addPosition').classList.add('is-invalid');
+            return;
+        } else {
+            document.getElementById('addPosition').classList.remove('is-invalid');
+        }
+
+        const payload = {
+            fullName: searchFilter.value.trim(),
+            branch: branchFilter.value.trim(),
+            department: document.getElementById('departmentBtn')?.dataset.value || "",
+            assignedTelrad: telradFilter.value.trim(),
+            nearestTelrad: document.getElementById('addNearestTelrad').value.trim(),
+            position: document.getElementById('addPosition').value.trim()
+        };
 
 
                 try {
@@ -857,11 +875,11 @@
                             <input class="form-control edit-input" name="Branch" value="${data.branch}" style="display:none;" />
                         </td>
                         <td>
-                            <span class="cell-text">${data.department}</span>
+                            <span class="cell-text">
+                                ${data.department}
+                                ${data.position ? `<br/><small class="text-muted">${data.position}</small>` : ""}
+                            </span>
                             <input class="form-control edit-input" name="Department" value="${data.department}" style="display:none;" />
-                        </td>
-                        <td>
-                            <span class="cell-text">${data.position || ""}</span>
                             <input class="form-control edit-input" name="Position" value="${data.position || ""}" style="display:none;" />
                         </td>
                         <td>
@@ -916,6 +934,8 @@
                     filterTable();
                     updateDashboard();
                     inlineAddForm.reset();
+                    document.getElementById('addPosition').classList.remove('is-invalid');
+                    document.getElementById('addPosition').value = '';
 
                 } catch (err) {
                     console.error(err);

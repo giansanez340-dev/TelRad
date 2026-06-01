@@ -43,6 +43,7 @@ namespace TelRad.Controllers
             employee.Department = (employee.Department ?? "").Trim();
             employee.AssignedTelrad = (employee.AssignedTelrad ?? "").Trim();
             employee.NearestTelrad = (employee.NearestTelrad ?? "").Trim();
+            employee.Position = (employee.Position ?? "").Trim();
 
             // =========================================
             // FUZZY DUPLICATE NAME CHECK
@@ -74,12 +75,12 @@ namespace TelRad.Controllers
                 });
             }
 
-            // REQUIRED ONLY FOR TELRAD
-            if (string.IsNullOrWhiteSpace(employee.AssignedTelrad))
+            // REQUIRED ONLY FOR POSITION
+            if (string.IsNullOrWhiteSpace(employee.Position))
             {
                 return BadRequest(new
                 {
-                    error = "Assigned Telrad is required."
+                    error = "Position is required."
                 });
             }
 
@@ -87,17 +88,20 @@ namespace TelRad.Controllers
             // BLOCK IF TELRAD IS INACTIVE
             // =========================================
 
-            bool inactiveTelradExists = await _context.Employees
-                .AnyAsync(e =>
-                    e.AssignedTelrad == employee.AssignedTelrad &&
-                    !e.IsActive);
-
-            if (inactiveTelradExists)
+            if (!string.IsNullOrWhiteSpace(employee.AssignedTelrad))
             {
-                return Conflict(new
+                bool inactiveTelradExists = await _context.Employees
+                    .AnyAsync(e =>
+                        e.AssignedTelrad == employee.AssignedTelrad &&
+                        !e.IsActive);
+
+                if (inactiveTelradExists)
                 {
-                    error = "This Telrad is inactive and cannot be assigned."
-                });
+                    return Conflict(new
+                    {
+                        error = "This Telrad is inactive and cannot be assigned."
+                    });
+                }
             }
 
             // =========================================
@@ -140,7 +144,8 @@ namespace TelRad.Controllers
                 branch = employee.Branch,
                 department = employee.Department,
                 assignedTelrad = employee.AssignedTelrad,
-                nearestTelrad = employee.NearestTelrad
+                nearestTelrad = employee.NearestTelrad,
+                position = employee.Position
             });
         }
 
@@ -165,6 +170,7 @@ namespace TelRad.Controllers
                 emp.Department = dto.Department;
                 emp.NearestTelrad = dto.NearestTelrad;
                 emp.IsMainHandler = dto.IsMainHandler;
+                emp.Position = dto.Position;
             }
 
             await _context.SaveChangesAsync();
