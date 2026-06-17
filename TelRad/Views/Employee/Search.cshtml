@@ -12,20 +12,53 @@
 
 <!-- FILTERS -->
 <div class="mb-4 px-3">
+    <!-- ROW 1: Employee Cards -->
+    <div class="row g-3 mb-3">
 
-    <!-- DASHBOARD CARDS -->
+        <div class="col-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center" style="background: #2957a6; border-radius: 5px;">
+                    <div>
+                        <div class="text-white fw-bold small">Total Employees</div>
+                        <div class="text-white fs-4 fw-bold" id="countTotal">
+                            @Model.Select(x => x.FullName).Distinct().Count()
+                        </div>
+                    </div>
+                    <i class="bi bi-people-fill fs-2 text-white"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center" style="background: #0891b2; border-radius: 5px;">
+                    <div>
+                        <div class="text-white fw-bold small">Active Employees</div>
+                        <div class="fs-4 fw-bold text-white" id="countActiveEmployees">
+                            @(Model.Count(x => x.IsActive && !string.IsNullOrEmpty(x.AssignedTelrad)))
+                        </div>
+                    </div>
+                    <i class="bi bi-person-check-fill fs-2 text-white"></i>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ROW 2: Telrad Cards -->
     <div class="row g-3 mb-3">
 
         <div class="col-4">
             <div class="card border-0 shadow-sm">
-                <div class="card-body d-flex justify-content-between align-items-center" style="background: #2a57a8; border-radius: 5px;">
+                <div class="card-body d-flex justify-content-between align-items-center" style="background: #4b3C83; border-radius: 5px;">
                     <div>
-                        <div class="text-white fw-bold small">Total Employees</div>
-                        <div class=" text-white fs-4 fw-bold" id="countTotal">
-                            @Model.Select(x => x.FullName).Distinct().Count()
+                        <div class="text-white fw-bold small">Total Telrads</div>
+                        <div class="fs-4 fw-bold text-white" id="countTotalTelrads">
+                            @(Model.Where(x => !string.IsNullOrEmpty(x.AssignedTelrad))
+                                                        .Select(x => x.AssignedTelrad).Distinct().Count())
                         </div>
                     </div>
-                    <i class="bi bi-people-fill fs-2 text-white"> </i>
+                    <i class="bi bi-telephone-fill fs-2 text-white"></i>
                 </div>
             </div>
         </div>
@@ -47,7 +80,7 @@
 
         <div class="col-4">
             <div class="card border-0 shadow-sm">
-                <div class="card-body d-flex justify-content-between align-items-center" style="background: #ea6070; border-radius: 5px;" >
+                <div class="card-body d-flex justify-content-between align-items-center" style="background: #ea6070; border-radius: 5px;">
                     <div>
                         <div class="text-white fw-bold small">Inactive Telrads</div>
                         <div class="fs-4 fw-bold text-white" id="countInactive">
@@ -172,7 +205,8 @@
                 <th>Number</th>
                 <th>Assigned Telrad</th>
                 <th>Nearest Telrad</th>
-                <th>Status</th>
+                <th>Employee Status</th>
+                <th>Telrad Status</th>
                 <th></th>
             </tr>
         </thead>
@@ -254,8 +288,17 @@
                             }
                             else
                             {
-                                <span class="badge status-badge @(groupIsActive ? "bg-success" : "bg-danger")">
-                                    @(groupIsActive ? "Active" : "Inactive")
+                                <span class="badge employee-status-badge @(employee.IsActive ? "bg-success" : "bg-danger")">
+                                    @(employee.IsActive ? "Active" : "Inactive")
+                                </span>
+                            }
+                        </td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(employee.AssignedTelrad))
+                            {
+                                bool telradActive = Model.Any(x => x.AssignedTelrad == employee.AssignedTelrad && x.IsActive);
+                                <span class="badge telrad-status-badge @(telradActive ? "bg-success" : "bg-danger")">
+                                    @(telradActive ? "Active" : "Inactive")
                                 </span>
                             }
                         </td>
@@ -336,6 +379,33 @@
     </div>
 </div>
 
+<!-- TOGGLE SCOPE MODAL -->
+<div id="toggleScopeModal" class="custom-modal">
+    <div class="custom-modal-content">
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Toggle Status</h5>
+            <button type="button" class="btn-close" id="closeScopeModal"></button>
+        </div>
+
+        <p id="toggleScopeMessage" class="text-muted mb-4"></p>
+
+        <div class="d-grid gap-2">
+            <button type="button" class="btn btn-outline-primary" id="toggleScopeEmployee">
+                <i class="bi bi-person me-2"></i> This Employee Only
+            </button>
+            <button type="button" class="btn btn-outline-danger" id="toggleScopeTelrad">
+                <i class="bi bi-telephone me-2"></i> Entire Telrad
+            </button>
+        </div>
+
+        <div class="text-end mt-3">
+            <button type="button" class="btn btn-secondary btn-sm" id="cancelScopeModal">Cancel</button>
+        </div>
+
+    </div>
+</div>
+
 @if (TempData["Success"] != null)
 {
     <div class="alert alert-success mt-3">@TempData["Success"]</div>
@@ -390,28 +460,23 @@
         };
 
         // ===============================
-        // FILTER DEPARTMENT DROPDOWN
+        // DEPARTMENT DROPDOWN
         // ===============================
         function populateDepartments(branch = "") {
             const dropdown = document.getElementById('departmentDropdown');
             dropdown.innerHTML = `<li><a class="dropdown-item dept-item" data-value="">All Departments</a></li>`;
-
             let list = [];
             if (branch && departments[branch]) {
                 list = departments[branch];
             } else {
                 Object.values(departments).forEach(arr => list.push(...arr));
             }
-
-            list = [...new Set(list)];
-            list.sort();
-
+            list = [...new Set(list)].sort();
             list.forEach(d => {
                 const li = document.createElement('li');
                 li.innerHTML = `<a class="dropdown-item dept-item" data-value="${d}">${d}</a>`;
                 dropdown.appendChild(li);
             });
-
             attachDeptEvents();
         }
 
@@ -428,42 +493,43 @@
         }
 
         populateDepartments();
+        searchFilter?.addEventListener('input', filterTable);
+        branchFilter?.addEventListener('change', filterTable);
+        telradFilter?.addEventListener('input', filterTable);
 
         // ===============================
         // FILTERING
         // ===============================
-        function filterTable() {
+        function _filterRows() {
             const search = (searchFilter?.value || "").trim().toLowerCase();
             const branch = (branchFilter?.value || "").trim().toLowerCase();
             const dept = (document.getElementById('departmentBtn')?.dataset.value || "").toLowerCase();
             const telrad = (telradFilter?.value || "").trim().toLowerCase();
-
             const rows = document.querySelectorAll('#employeeTableBody tr');
-
             rows.forEach(row => {
                 const name = (row.dataset.name || "").toLowerCase();
                 const rBranch = (row.dataset.branch || "").toLowerCase();
                 const rDept = (row.dataset.department || "").toLowerCase();
                 const assignedTelrad = (row.dataset.assignedtelrad || "").toLowerCase();
-
                 const match =
                     (!search || name.includes(search)) &&
                     (!telrad || assignedTelrad.includes(telrad)) &&
                     (!branch || rBranch.includes(branch)) &&
                     (!dept || rDept.includes(dept));
-
                 row.style.display = match ? "" : "none";
             });
         }
 
         // ===============================
-        // UPDATE DASHBOARD CARDS
+        // DASHBOARD
         // ===============================
         function updateDashboard() {
             const rows = document.querySelectorAll('#employeeTableBody tr');
             const seenEmployees = new Set();
-            const activeTelrads = new Set();
-            const inactiveTelrads = new Set();
+            const allTelrads = new Set();
+            // For telrad-level active/inactive: a telrad is active if ANY of its employees is active
+            const telradHasActive = {};
+            let activeEmployees = 0;
 
             rows.forEach(row => {
                 const telrad = (row.dataset.assignedtelrad || "").trim();
@@ -473,128 +539,128 @@
                 if (name) seenEmployees.add(name);
 
                 if (telrad) {
+                    allTelrads.add(telrad);
                     if (isActive) {
-                        activeTelrads.add(telrad);
+                        telradHasActive[telrad] = true;
+                        activeEmployees++;
                     } else {
-                        inactiveTelrads.add(telrad);
+                        if (telradHasActive[telrad] === undefined) telradHasActive[telrad] = false;
                     }
                 }
             });
 
+            const activeTelrads = Object.values(telradHasActive).filter(v => v).length;
+            const inactiveTelrads = Object.values(telradHasActive).filter(v => !v).length;
+
             document.getElementById('countTotal').textContent = seenEmployees.size;
-            document.getElementById('countActive').textContent = activeTelrads.size;
-            document.getElementById('countInactive').textContent = inactiveTelrads.size;
+            document.getElementById('countActiveEmployees').textContent = activeEmployees;
+            document.getElementById('countTotalTelrads').textContent = allTelrads.size;
+            document.getElementById('countActive').textContent = activeTelrads;
+            document.getElementById('countInactive').textContent = inactiveTelrads;
         }
 
-        searchFilter.addEventListener('input', filterTable);
-        telradFilter?.addEventListener('input', filterTable);
-        branchFilter.addEventListener('change', function () {
-            populateDepartments(this.value);
-            filterTable();
-        });
-
         // ===============================
-        // SHARED: applyState helper
+        // applyState — single row only
         // ===============================
-        function applyState(targetRow, state) {
-            const statusBadge = targetRow.querySelector('.status-badge');
+        function applyState(targetRow, employeeActive) {
+            const empBadge = targetRow.querySelector('.employee-status-badge');
             const toggleBtn = targetRow.querySelector('.toggle-active-btn');
             const icon = toggleBtn ? toggleBtn.querySelector('i') : null;
 
-            // Don't touch rows with no telrad assigned
-            if (!statusBadge) return;
-
-            statusBadge.textContent = state ? 'Active' : 'Inactive';
-            statusBadge.className = 'badge status-badge ' + (state ? 'bg-success' : 'bg-danger');
+            if (empBadge) {
+                empBadge.textContent = employeeActive ? 'Active' : 'Inactive';
+                empBadge.className = 'badge employee-status-badge ' + (employeeActive ? 'bg-success' : 'bg-danger');
+            }
 
             if (toggleBtn) {
-                toggleBtn.dataset.isactive = state.toString();
-                toggleBtn.title = state ? 'Set Inactive' : 'Set Active';
-                toggleBtn.classList.toggle('active-state', state);
+                toggleBtn.dataset.isactive = employeeActive.toString();
+                toggleBtn.title = employeeActive ? 'Set Inactive' : 'Set Active';
+                toggleBtn.classList.toggle('active-state', employeeActive);
             }
             if (icon) {
-                icon.className = state ? 'bi bi-toggle-on text-success' : 'bi bi-toggle-off text-danger';
+                icon.className = employeeActive ? 'bi bi-toggle-on text-success' : 'bi bi-toggle-off text-danger';
             }
 
-            targetRow.dataset.isactive = state.toString();
+            targetRow.dataset.isactive = employeeActive.toString();
+        }
+
+        // Recompute and repaint the telrad-level badge for all rows sharing a telrad
+        function refreshTelradBadge(assignedTelrad) {
+            if (!assignedTelrad) return;
+            const sharedRows = document.querySelectorAll(
+                `#employeeTableBody tr[data-assignedtelrad="${assignedTelrad}"]`
+            );
+            const anyActive = Array.from(sharedRows).some(r => r.dataset.isactive === 'true');
+            sharedRows.forEach(r => {
+                const badge = r.querySelector('.telrad-status-badge');
+                if (badge) {
+                    badge.textContent = anyActive ? 'Active' : 'Inactive';
+                    badge.className = 'badge telrad-status-badge ' + (anyActive ? 'bg-success' : 'bg-danger');
+                }
+            });
         }
 
         // ===============================
-        // EDIT BUTTON (delegated)
+        // EDIT BUTTON
         // ===============================
         document.addEventListener('click', function (e) {
             const btn = e.target.closest('.edit-btn');
             if (!btn) return;
-
             const row = btn.closest('tr');
             row.classList.add('editing');
-
             row.querySelector('.save-form')?.classList.remove('d-none');
             row.querySelector('.delete-form')?.classList.remove('d-none');
             row.querySelector('.toggle-active-btn')?.classList.remove('d-none');
-            row.querySelectorAll('.main-handler-checkbox').forEach(cb => {
-                cb.removeAttribute('disabled');
-            });
-
+            row.querySelectorAll('.main-handler-checkbox').forEach(cb => cb.removeAttribute('disabled'));
             row.querySelectorAll('.edit-input').forEach(i => { i.style.display = 'block'; i.removeAttribute('readonly'); });
             row.querySelectorAll('.cell-text').forEach(s => s.style.display = 'none');
-
             btn.classList.add('d-none');
         });
 
         function exitEditMode(row) {
             row.classList.remove('editing');
-
             row.querySelector('.save-form')?.classList.add('d-none');
             row.querySelector('.delete-form')?.classList.add('d-none');
             row.querySelector('.toggle-active-btn')?.classList.add('d-none');
             row.querySelector('.edit-btn')?.classList.remove('d-none');
-
-            row.querySelectorAll('.main-handler-checkbox').forEach(cb => {
-                cb.setAttribute('disabled', '');
-            });
-
-            row.querySelectorAll('.edit-input').forEach(input => {
-                input.setAttribute('readonly', true);
-                input.style.display = 'none';
-            });
-
-            row.querySelectorAll('.cell-text').forEach(span => {
-                span.style.display = '';
-            });
+            row.querySelectorAll('.main-handler-checkbox').forEach(cb => cb.setAttribute('disabled', ''));
+            row.querySelectorAll('.edit-input').forEach(i => { i.setAttribute('readonly', true); i.style.display = 'none'; });
+            row.querySelectorAll('.cell-text').forEach(s => s.style.display = '');
         }
 
         // ===============================
-        // SAVE BUTTON (delegated) - FIXED
+        // SAVE BUTTON — reads from the ROW's edit inputs, not filter inputs
         // ===============================
         document.addEventListener('click', function (e) {
             const btn = e.target.closest('.save-btn');
             if (!btn) return;
+            e.preventDefault();
 
             const form = btn.closest('.save-form');
             const row = form.closest('tr');
 
-            e.preventDefault();
+            // Read values from THIS ROW's edit inputs
+            const id            = form.querySelector('input[name="Id"]').value;
+            const fullName      = row.querySelector('input[name="FullName"]').value.trim();
+            const branch        = row.querySelector('input[name="Branch"]').value.trim();
+            const department    = row.querySelector('input[name="Department"]').value.trim();
+            const position      = row.querySelector('input[name="Position"]') ? row.querySelector('input[name="Position"]').value.trim() : '';
+            const number        = row.querySelector('input[name="Number"]').value.trim();
+            const assignedTelrad = row.querySelector('input[name="AssignedTelrad"]').value.trim();
+            const nearestTelrad = row.querySelector('input[name="NearestTelrad"]').value.trim();
+            const isMainHandler = form.querySelector('input[name="IsMainHandler"]')?.value === 'true';
 
-            const id = form.querySelector('input[name="Id"]').value;
-            const telrad = row.querySelector('input[name="AssignedTelrad"]').value.trim();
-
-            // No client-side telrad validation—let server handle it
-            // Multiple active employees CAN share the same telrad
-
-        const payload = {
-            fullName: searchFilter.value.trim(),
-            branch: branchFilter.value.trim(),
-            department: document.getElementById('departmentBtn')?.dataset.value || "",
-            assignedTelrad: telradFilter.value.trim(),
-            nearestTelrad: document.getElementById('addNearestTelrad').value.trim(),
-            position: document.getElementById('addPosition').value.trim()
-        };
+            const payload = {
+                id: parseInt(id),
+                fullName, branch, department, position,
+                number, assignedTelrad, nearestTelrad,
+                isMainHandler
+            };
 
             fetch('/Employee/UpdateEmployee', {
                 method: 'POST',
                 credentials: 'same-origin',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
                     'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
                 },
@@ -602,56 +668,49 @@
             })
             .then(async r => {
                 const data = await r.json().catch(() => ({}));
-                
-                if (!r.ok) {
-                    throw new Error(data.error || 'Save failed');
-                }
+                if (!r.ok) throw new Error(data.error || 'Save failed');
 
-                const toggleBtn = row.querySelector('.toggle-active-btn');
-                const currentIsActive = toggleBtn
-                    ? toggleBtn.dataset.isactive === 'true'
-                    : row.dataset.isactive === 'true';
+                const oldTelrad = row.dataset.assignedtelrad;
 
-            const oldTelrad = row.dataset.assignedtelrad;
-            document.querySelectorAll(`#employeeTableBody tr[data-assignedtelrad="${oldTelrad}"]`)
-                .forEach(sharedRow => applyState(sharedRow, currentIsActive));
+                // Update row data attributes
+                row.dataset.name = fullName;
+                row.dataset.branch = branch;
+                row.dataset.department = department;
+                row.dataset.assignedtelrad = assignedTelrad;
 
-            // If a telrad was just assigned (was empty before), update this row's status badge directly
-            if (!oldTelrad && payload.assignedTelrad) {
-                const statusCell = row.querySelector('td:nth-child(8)');
-                if (statusCell) {
-                    statusCell.innerHTML = `<span class="badge status-badge bg-success">Active</span>`;
-                }
-                row.dataset.isactive = "true";
-                row.dataset.assignedtelrad = payload.assignedTelrad;
-
-            // ADD THIS: if telrad was removed, revert badge to 'No Telrad Assigned'
-            } else if (oldTelrad && !payload.assignedTelrad) {
-                const statusCell = row.querySelector('td:nth-child(8)');
-                if (statusCell) {
-                    statusCell.innerHTML = `<span class="badge bg-secondary">No Telrad Assigned</span>`;
-                }
-                row.dataset.isactive = "false";
-                row.dataset.assignedtelrad = "";
-            }
-
-                row.dataset.name = payload.fullName;
-                row.dataset.branch = payload.branch;
-                row.dataset.department = payload.department;
-                row.dataset.assignedtelrad = payload.assignedTelrad;
-
-                // Update cell-text properly
-                row.querySelector('td:nth-child(2) .cell-text').textContent = payload.fullName;
-                row.querySelector('td:nth-child(3) .cell-text').textContent = payload.branch;
-                
+                // Update cell-text spans
+                row.querySelector('td:nth-child(2) .cell-text').textContent = fullName;
+                row.querySelector('td:nth-child(3) .cell-text').textContent = branch;
                 const deptCell = row.querySelector('td:nth-child(4) .cell-text');
-                deptCell.innerHTML = payload.position 
-                    ? `${payload.department}<br/><small class="text-muted">${payload.position}</small>` 
-                    : payload.department;
-                
-                row.querySelector('td:nth-child(5) .cell-text').textContent = payload.number;
-                row.querySelector('td:nth-child(6) .cell-text').textContent = payload.assignedTelrad;
-                row.querySelector('td:nth-child(7) .cell-text').textContent = payload.nearestTelrad;
+                deptCell.innerHTML = position
+                    ? `${department}<br/><small class="text-muted">${position}</small>`
+                    : department;
+                row.querySelector('td:nth-child(5) .cell-text').textContent = number;
+                row.querySelector('td:nth-child(6) .cell-text').textContent = assignedTelrad;
+                row.querySelector('td:nth-child(7) .cell-text').textContent = nearestTelrad;
+
+                // Handle telrad assignment changes on status badges
+                if (!oldTelrad && assignedTelrad) {
+                    // Was unassigned, now has telrad
+                    const statusCell = row.querySelector('td:nth-child(8)');
+                    if (statusCell) {
+                        statusCell.innerHTML = `
+                            <span class="badge employee-status-badge bg-success">Active</span>
+                            <span class="badge telrad-status-badge bg-success ms-1">Telrad Active</span>`;
+                    }
+                    row.dataset.isactive = "true";
+                } else if (oldTelrad && !assignedTelrad) {
+                    // Telrad removed
+                    const statusCell = row.querySelector('td:nth-child(8)');
+                    if (statusCell) {
+                        statusCell.innerHTML = `<span class="badge bg-secondary">No Telrad Assigned</span>`;
+                    }
+                    row.dataset.isactive = "false";
+                }
+
+                // Refresh telrad badges for old and new telrad groups
+                refreshTelradBadge(oldTelrad);
+                refreshTelradBadge(assignedTelrad);
 
                 exitEditMode(row);
                 updateDashboard();
@@ -663,22 +722,13 @@
         });
 
         // ===============================
-        // TELRAD VALIDATION
-        // ===============================
-        // function telradExists(telrad, id) {
-        //     // Removed: Server now validates (inactive telrad blocking only)
-        // }
-
-        // ===============================
-        // MAIN HANDLER CHECKBOX (delegated)
+        // MAIN HANDLER CHECKBOX
         // ===============================
         document.addEventListener('change', function (e) {
             const cb = e.target.closest('.main-handler-checkbox');
             if (!cb || cb.disabled) return;
-
             const telrad = cb.dataset.telrad;
             const employeeId = cb.dataset.employeeid;
-
             document.querySelectorAll(`.main-handler-checkbox[data-telrad="${telrad}"]`).forEach(other => {
                 if (other !== cb) {
                     other.checked = false;
@@ -686,7 +736,6 @@
                     if (hidden) hidden.value = "false";
                 }
             });
-
             fetch('/Employee/UpdateMainHandler', {
                 method: 'POST',
                 credentials: 'same-origin',
@@ -694,45 +743,64 @@
                     'Content-Type': 'application/json',
                     'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
                 },
-                body: JSON.stringify({
-                    EmployeeId: employeeId,
-                    IsMainHandler: cb.checked,
-                    AssignedTelrad: telrad
-                })
+                body: JSON.stringify({ EmployeeId: employeeId, IsMainHandler: cb.checked, AssignedTelrad: telrad })
             }).then(resp => {
-                if (!resp.ok) {
-                    resp.text().then(t => {
-                        console.error('UpdateMainHandler failed:', resp.status, t);
-                        alert('Failed to update main handler: ' + (t || resp.status));
-                    });
-                }
-            }).catch(err => {
-                console.error(err);
-                alert('Error updating main handler');
-            });
+                if (!resp.ok) resp.text().then(t => alert('Failed to update main handler: ' + t));
+            }).catch(err => alert('Error updating main handler'));
         });
 
         // ===============================
-        // TOGGLE ACTIVE BUTTON (delegated)
-        // Improved: show server error details and preserve UI on failure
+        // TOGGLE ACTIVE — scope modal
         // ===============================
-        document.addEventListener('click', async function (e) {
+        let _pendingToggle = null;
+
+        document.addEventListener('click', function (e) {
             const btn = e.target.closest('.toggle-active-btn');
             if (!btn) return;
 
+            const row = btn.closest('tr');
             const employeeId = btn.dataset.employeeid;
             const isActive = btn.dataset.isactive === 'true';
             const newState = !isActive;
-
-            const row = btn.closest('tr');
             const assignedTelrad = row.dataset.assignedtelrad;
+            const employeeName = (row.dataset.name || "this employee").trim();
 
             const sharedRows = document.querySelectorAll(
                 `#employeeTableBody tr[data-assignedtelrad="${assignedTelrad}"]`
             );
+            const hasMultiple = sharedRows.length > 1;
 
-            // Optimistically update UI
-            sharedRows.forEach(r => applyState(r, newState));
+            _pendingToggle = { employeeId, isActive, newState, assignedTelrad, row, sharedRows };
+
+            const action = newState ? 'activate' : 'deactivate';
+            document.getElementById('toggleScopeMessage').innerHTML = hasMultiple
+                ? `Telrad <strong>${assignedTelrad}</strong> has <strong>${sharedRows.length} employees</strong>.
+                   Do you want to ${action} only <strong>${employeeName}</strong>, or the entire telrad?`
+                : `Do you want to ${action} <strong>${employeeName}</strong>?`;
+
+            // Always show the telrad button — even for single-employee telrads
+            document.getElementById('toggleScopeTelrad').style.display = '';
+
+            // But update the message to make it clear both options are available
+            document.getElementById('toggleScopeMessage').innerHTML = hasMultiple
+                ? `Telrad <strong>${assignedTelrad}</strong> has <strong>${sharedRows.length} employees</strong>.
+                   Do you want to ${action} only <strong>${employeeName}</strong>, or the entire telrad?`
+                : `Do you want to ${action} <strong>${employeeName}</strong> only, or mark the entire telrad as ${action}d?`;
+            document.getElementById('toggleScopeModal').style.display = 'flex';
+        });
+
+        async function executeToggle(scope) {
+            if (!_pendingToggle) return;
+            const { employeeId, isActive, newState, assignedTelrad, row, sharedRows } = _pendingToggle;
+            _pendingToggle = null;
+            document.getElementById('toggleScopeModal').style.display = 'none';
+
+            // Only this row, or all rows sharing the telrad
+            const targetRows = scope === 'telrad' ? Array.from(sharedRows) : [row];
+
+            // Optimistic UI
+            targetRows.forEach(r => applyState(r, newState));
+            refreshTelradBadge(assignedTelrad);
 
             try {
                 const resp = await fetch('/Employee/UpdateActiveStatus', {
@@ -743,27 +811,39 @@
                         'Accept': 'application/json',
                         'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
                     },
-                    body: JSON.stringify({ EmployeeId: employeeId, IsActive: newState, AssignedTelrad: assignedTelrad })
+                    body: JSON.stringify({
+                        EmployeeId: parseInt(employeeId),
+                        IsActive: newState,
+                        AssignedTelrad: assignedTelrad,
+                        Scope: scope
+                    })
                 });
 
                 const text = await resp.text();
-
                 if (!resp.ok) {
-                    console.error('UpdateActiveStatus failed', resp.status, text);
-                    // revert UI
-                    sharedRows.forEach(r => applyState(r, isActive));
-                    // show detailed error to help debugging
-                    showModal('Error', `Failed to update status (${resp.status}): ${text || 'no details returned'}`);
+                    targetRows.forEach(r => applyState(r, isActive));
+                    refreshTelradBadge(assignedTelrad);
+                    showModal('Error', `Failed to update status (${resp.status}): ${text || 'no details'}`);
                     return;
                 }
 
-                // success
                 updateDashboard();
             } catch (err) {
-                console.error('UpdateActiveStatus error', err);
-                sharedRows.forEach(r => applyState(r, isActive));
-                showModal('Error', 'Error updating status: ' + (err && err.message ? err.message : String(err)));
+                targetRows.forEach(r => applyState(r, isActive));
+                refreshTelradBadge(assignedTelrad);
+                showModal('Error', 'Error updating status: ' + (err?.message ?? String(err)));
             }
+        }
+
+        document.getElementById('toggleScopeEmployee').addEventListener('click', () => executeToggle('employee'));
+        document.getElementById('toggleScopeTelrad').addEventListener('click',   () => executeToggle('telrad'));
+        document.getElementById('closeScopeModal').addEventListener('click', () => {
+            document.getElementById('toggleScopeModal').style.display = 'none';
+            _pendingToggle = null;
+        });
+        document.getElementById('cancelScopeModal').addEventListener('click', () => {
+            document.getElementById('toggleScopeModal').style.display = 'none';
+            _pendingToggle = null;
         });
 
         // ===============================
@@ -772,58 +852,42 @@
         const responseModal = document.getElementById('responseModal');
         const responseModalTitle = document.getElementById('responseModalTitle');
         const responseModalBody = document.getElementById('responseModalBody');
-        const closeResponseModal = document.getElementById('closeResponseModal');
-        const responseModalOk = document.getElementById('responseModalOk');
 
         function showModal(title, message, isSuccess = false) {
             responseModalTitle.textContent = title;
-            responseModalBody.innerHTML = `
-                <div class="alert ${isSuccess ? 'alert-success' : 'alert-danger'} mb-0">
-                    ${message}
-                </div>
-            `;
+            responseModalBody.innerHTML = `<div class="alert ${isSuccess ? 'alert-success' : 'alert-danger'} mb-0">${message}</div>`;
             responseModal.style.display = 'flex';
         }
 
-        function closeModal() {
-            responseModal.style.display = 'none';
-        }
+        function closeModal() { responseModal.style.display = 'none'; }
 
-        closeResponseModal.addEventListener('click', closeModal);
-        responseModalOk.addEventListener('click', closeModal);
-        window.addEventListener('click', function (e) {
-            if (e.target === responseModal) closeModal();
-        });
+        document.getElementById('closeResponseModal').addEventListener('click', closeModal);
+        document.getElementById('responseModalOk').addEventListener('click', closeModal);
+        window.addEventListener('click', e => { if (e.target === responseModal) closeModal(); });
 
         // ===============================
-        // INLINE ADD AJAX
+        // INLINE ADD
         // ===============================
         if (inlineAddForm) {
             inlineAddForm.addEventListener('submit', async function (e) {
-
                 e.preventDefault();
 
+                const positionVal = document.getElementById('addPosition').value.trim();
+                if (!positionVal) {
+                    showModal('Validation Error', 'Position is required.');
+                    document.getElementById('addPosition').classList.add('is-invalid');
+                    return;
+                }
+                document.getElementById('addPosition').classList.remove('is-invalid');
 
-                        // ADD this block right after e.preventDefault(); at the top of the submit handler:
-        const positionVal = document.getElementById('addPosition').value.trim();
-
-        if (!positionVal) {
-            showModal('Validation Error', 'Position is required.');
-            document.getElementById('addPosition').classList.add('is-invalid');
-            return;
-        } else {
-            document.getElementById('addPosition').classList.remove('is-invalid');
-        }
-
-        const payload = {
-            fullName: searchFilter.value.trim(),
-            branch: branchFilter.value.trim(),
-            department: document.getElementById('departmentBtn')?.dataset.value || "",
-            assignedTelrad: telradFilter.value.trim(),
-            nearestTelrad: document.getElementById('addNearestTelrad').value.trim(),
-            position: document.getElementById('addPosition').value.trim()
-        };
-
+                const payload = {
+                    fullName:      searchFilter.value.trim(),
+                    branch:        branchFilter.value.trim(),
+                    department:    document.getElementById('departmentBtn')?.dataset.value || "",
+                    assignedTelrad: telradFilter.value.trim(),
+                    nearestTelrad: document.getElementById('addNearestTelrad').value.trim(),
+                    position:      document.getElementById('addPosition').value.trim()
+                };
 
                 try {
                     const response = await fetch('/ManageEmployee/AddEmployee', {
@@ -849,7 +913,6 @@
 
                     const tbody = document.getElementById('employeeTableBody');
                     const tr = document.createElement('tr');
-
                     tr.dataset.name = data.fullName || "";
                     tr.dataset.branch = data.branch || "";
                     tr.dataset.department = data.department || "";
@@ -859,11 +922,8 @@
 
                     tr.innerHTML = `
                         <td>
-                            <input type="checkbox"
-                                   class="main-handler-checkbox"
-                                   data-telrad="${data.assignedTelrad}"
-                                   data-employeeid="${data.id}"
-                                   disabled />
+                            <input type="checkbox" class="main-handler-checkbox"
+                                   data-telrad="${data.assignedTelrad}" data-employeeid="${data.id}" disabled />
                             <input type="hidden" class="main-handler-hidden" value="false">
                         </td>
                         <td class="text-start">
@@ -891,19 +951,19 @@
                             <input class="form-control edit-input" name="AssignedTelrad" value="${data.assignedTelrad}" style="display:none;" />
                         </td>
                         <td>
-                            <span class="cell-text">${data.nearestTelrad}</span>
-                            <input class="form-control edit-input" name="NearestTelrad" value="${data.nearestTelrad}" style="display:none;" />
+                            <span class="cell-text">${data.nearestTelrad || ""}</span>
+                            <input class="form-control edit-input" name="NearestTelrad" value="${data.nearestTelrad || ""}" style="display:none;" />
                         </td>
                         <td>
-                            <span class="badge status-badge bg-success">Active</span>
+                            ${data.assignedTelrad
+                                ? `<span class="badge employee-status-badge bg-success">Active</span>
+                                   <span class="badge telrad-status-badge bg-success ms-1">Telrad Active</span>`
+                                : `<span class="badge bg-secondary">No Telrad Assigned</span>`}
                         </td>
                         <td class="actions-column">
                             <div class="d-flex gap-2 justify-content-end">
-                                <button type="button"
-                                        class="btn toggle-active-btn d-none active-state"
-                                        data-employeeid="${data.id}"
-                                        data-isactive="true"
-                                        title="Set Inactive">
+                                <button type="button" class="btn toggle-active-btn d-none active-state"
+                                        data-employeeid="${data.id}" data-isactive="true" title="Set Inactive">
                                     <i class="bi bi-toggle-on text-success"></i>
                                 </button>
                                 <button type="button" class="btn btn-warning edit-btn btn-sm">
@@ -918,7 +978,7 @@
                                     <input type="hidden" name="Position" value="${data.position || ""}" />
                                     <input type="hidden" name="Number" value="${data.number || ""}" />
                                     <input type="hidden" name="AssignedTelrad" value="${data.assignedTelrad}" />
-                                    <input type="hidden" name="NearestTelrad" value="${data.nearestTelrad}" />
+                                    <input type="hidden" name="NearestTelrad" value="${data.nearestTelrad || ""}" />
                                     <button type="submit" class="btn btn-success save-btn btn-sm">Save</button>
                                 </form>
                                 <form action="/employee/deleteemployee" method="post" class="d-none delete-form"
@@ -927,14 +987,12 @@
                                     <button type="submit" class="btn delete-btn btn-danger btn-sm">delete</button>
                                 </form>
                             </div>
-                        </td>
-                    `;
+                        </td>`;
 
                     tbody.appendChild(tr);
                     filterTable();
                     updateDashboard();
                     inlineAddForm.reset();
-                    document.getElementById('addPosition').classList.remove('is-invalid');
                     document.getElementById('addPosition').value = '';
 
                 } catch (err) {
@@ -943,6 +1001,7 @@
                 }
             });
         }
+
         // ===============================
         // PAGINATION
         // ===============================
@@ -950,18 +1009,15 @@
         let currentPage = 1;
 
         function getFilteredRows() {
-            // Run the original filter logic to get which rows match, without touching display
             const search = (searchFilter?.value || "").trim().toLowerCase();
             const branch = (branchFilter?.value || "").trim().toLowerCase();
             const dept = (document.getElementById('departmentBtn')?.dataset.value || "").toLowerCase();
             const telrad = (telradFilter?.value || "").trim().toLowerCase();
-
             return Array.from(document.querySelectorAll('#employeeTableBody tr')).filter(row => {
                 const name = (row.dataset.name || "").toLowerCase();
                 const rBranch = (row.dataset.branch || "").toLowerCase();
                 const rDept = (row.dataset.department || "").toLowerCase();
                 const assignedTelrad = (row.dataset.assignedtelrad || "").toLowerCase();
-
                 return (!search || name.includes(search)) &&
                        (!telrad || assignedTelrad.includes(telrad)) &&
                        (!branch || rBranch.includes(branch)) &&
@@ -969,22 +1025,42 @@
             });
         }
 
+        function filterTable() {
+            const search = (searchFilter?.value || "").trim().toLowerCase();
+            const branch = (branchFilter?.value || "").trim().toLowerCase();
+            const dept = (document.getElementById('departmentBtn')?.dataset.value || "").toLowerCase();
+            const telrad = (telradFilter?.value || "").trim().toLowerCase();
+            const rows = document.querySelectorAll('#employeeTableBody tr');
+            rows.forEach(row => {
+                const name = (row.dataset.name || "").toLowerCase();
+                const rBranch = (row.dataset.branch || "").toLowerCase();
+                const rDept = (row.dataset.department || "").toLowerCase();
+                const assignedTelrad = (row.dataset.assignedtelrad || "").toLowerCase();
+                const match =
+                    (!search || name.includes(search)) &&
+                    (!telrad || assignedTelrad.includes(telrad)) &&
+                    (!branch || rBranch.includes(branch)) &&
+                    (!dept || rDept.includes(dept));
+                row.style.display = match ? "" : "none";
+            });
+            currentPage = 1;
+            renderPage(1);
+        }
+
+        searchFilter?.addEventListener('input', filterTable);
+        branchFilter?.addEventListener('change', filterTable);
+        telradFilter?.addEventListener('input', filterTable);
+
         function renderPage(page) {
             const allRows = document.querySelectorAll('#employeeTableBody tr');
             const filteredRows = getFilteredRows();
             const total = filteredRows.length;
             const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
             currentPage = Math.max(1, Math.min(page, totalPages));
-
             const start = (currentPage - 1) * PAGE_SIZE;
             const end = currentPage * PAGE_SIZE;
-
             const pageSet = new Set(filteredRows.slice(start, end));
-
-            allRows.forEach(row => {
-                row.style.display = pageSet.has(row) ? '' : 'none';
-            });
-
+            allRows.forEach(row => { row.style.display = pageSet.has(row) ? '' : 'none'; });
             renderPaginationControls(totalPages, total);
         }
 
@@ -996,10 +1072,8 @@
                 container.className = 'd-flex justify-content-between align-items-center px-4 mt-3 mb-2';
                 document.querySelector('.table-responsive').after(container);
             }
-
             const start = Math.min((currentPage - 1) * PAGE_SIZE + 1, totalRows);
             const end = Math.min(currentPage * PAGE_SIZE, totalRows);
-
             container.innerHTML = `
                 <small class="text-muted">Showing ${start}–${end} of ${totalRows} records</small>
                 <div class="d-flex gap-2 align-items-center">
@@ -1008,43 +1082,29 @@
                     <span class="small">Page ${currentPage} of ${totalPages}</span>
                     <button class="btn btn-sm page-btn" id="btnNext" ${currentPage >= totalPages ? 'disabled' : ''}>›</button>
                     <button class="btn btn-sm page-btn" id="btnLast" ${currentPage >= totalPages ? 'disabled' : ''}>»</button>
-                </div>
-            `;
-
-        document.getElementById('btnFirst').addEventListener('click', () => { renderPage(1);              window.scrollTo(0, 0); });
-        document.getElementById('btnPrev').addEventListener('click',  () => { renderPage(currentPage - 1); window.scrollTo(0, 0); });
-        document.getElementById('btnNext').addEventListener('click',  () => { renderPage(currentPage + 1); window.scrollTo(0, 0); });
-        document.getElementById('btnLast').addEventListener('click',  () => { renderPage(Math.ceil(totalRows / PAGE_SIZE)); window.scrollTo(0, 0); });
+                </div>`;
+            document.getElementById('btnFirst').addEventListener('click', () => { renderPage(1); window.scrollTo(0,0); });
+            document.getElementById('btnPrev').addEventListener('click',  () => { renderPage(currentPage - 1); window.scrollTo(0,0); });
+            document.getElementById('btnNext').addEventListener('click',  () => { renderPage(currentPage + 1); window.scrollTo(0,0); });
+            document.getElementById('btnLast').addEventListener('click',  () => { renderPage(Math.ceil(totalRows / PAGE_SIZE)); window.scrollTo(0,0); });
         }
 
-        // Override filterTable to repaginate after filtering
-        const _originalFilterTable = filterTable;
-        window.filterTable = function () {
-            currentPage = 1;
-            _originalFilterTable();   // hides non-matching rows
-            renderPage(1);            // then slices the visible ones into pages
-        };
 
-        // Initial sort: Active → Inactive → No Telrad Assigned
+        // Initial sort: Active employees first, then inactive, then no telrad
         (function initialSort() {
             const tbody = document.getElementById('employeeTableBody');
             const rows = Array.from(tbody.querySelectorAll('tr'));
-
-            const rankMap = { 'active': 0, 'inactive': 1 };
-
             rows.sort((a, b) => {
                 const getRank = row => {
-                    const badge = row.querySelector('.status-badge');
-                    if (!badge) return 2;
-                    const text = badge.textContent.trim().toLowerCase();
-                    return rankMap[text] ?? 2;
+                    if (!row.dataset.assignedtelrad) return 2;
+                    return row.dataset.isactive === 'true' ? 0 : 1;
                 };
                 return getRank(a) - getRank(b);
             });
-
             rows.forEach(row => tbody.appendChild(row));
         })();
 
         renderPage(1);
+        updateDashboard();
     </script>
 }

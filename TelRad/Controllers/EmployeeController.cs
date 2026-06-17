@@ -205,20 +205,30 @@ namespace TelRad.Controllers
         {
             if (request == null) return BadRequest();
 
+            if (request.Scope == "employee")
+            {
+                if (request.EmployeeId <= 0)
+                    return BadRequest(new { error = "EmployeeId is required for employee-scope toggle." });
+
+                var emp = await _context.Employees.FindAsync(request.EmployeeId);
+                if (emp == null) return NotFound();
+
+                emp.IsActive = request.IsActive;
+                await _context.SaveChangesAsync();
+                return Ok();
+            }
+
+            // Scope == "telrad" — update all employees sharing the same AssignedTelrad
             var assignedTelrad = request.AssignedTelrad?.Trim();
+
             if (string.IsNullOrWhiteSpace(assignedTelrad) && request.EmployeeId > 0)
             {
                 var emp = await _context.Employees.FindAsync(request.EmployeeId);
-                if (emp != null)
-                {
-                    assignedTelrad = emp.AssignedTelrad;
-                }
+                if (emp != null) assignedTelrad = emp.AssignedTelrad;
             }
 
             if (string.IsNullOrWhiteSpace(assignedTelrad))
-            {
-                return BadRequest(new { error = "AssignedTelrad is required." });
-            }
+                return BadRequest(new { error = "AssignedTelrad is required for telrad-scope toggle." });
 
             var employees = await _context.Employees
                 .Where(e => e.AssignedTelrad == assignedTelrad)
@@ -227,12 +237,19 @@ namespace TelRad.Controllers
             if (!employees.Any()) return NotFound();
 
             foreach (var emp in employees)
-            {
                 emp.IsActive = request.IsActive;
-            }
 
             await _context.SaveChangesAsync();
             return Ok();
+        }
+
+        // Make sure this is the ONLY definition of this class in the file
+        public class UpdateActiveStatusRequest
+        {
+            public int EmployeeId { get; set; }
+            public bool IsActive { get; set; }
+            public string AssignedTelrad { get; set; } = "";
+            public string Scope { get; set; } = "telrad";
         }
 
         public class UpdateEmployeeRequest
@@ -246,13 +263,6 @@ namespace TelRad.Controllers
             public string AssignedTelrad { get; set; } = "";
             public string NearestTelrad { get; set; } = "";
             public bool IsMainHandler { get; set; }
-        }
-
-        public class UpdateActiveStatusRequest
-        {
-            public int EmployeeId { get; set; }
-            public bool IsActive { get; set; }
-            public string AssignedTelrad { get; set; } = "";
         }
     }
 }
