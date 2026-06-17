@@ -1,21 +1,21 @@
 
-COLUMN			DATA TYPE 	NULLABLE	DESCRIPTION
-Id			INT		PK		Unique identifier for each record. Primary key, auto-								incremented.
+COLUMN			  DATA TYPE 	NULLABLE	DESCRIPTION
+Id		    	     INT		     PK		  Unique identifier for each record. Primary key, auto-incremented.
 
-FullName		NVARCHAR	Required	Full name of the person. Cannot be null.
+FullName		   NVARCHAR	  Required  Full name of the person. Cannot be null.
 
-Branch			NVARCHAR	Required	Branch where the person is assigned. Cannot be null.
+Branch			   NVARCHAR	  Required	Branch where the person is assigned. Cannot be null.
 
-Department		NVARCHAR	Required	Department the person belongs to. Cannot be null.
+Department	   NVARCHAR	  Required	Department the person belongs to. Cannot be null.
 
-AssignedTelrad		NVARCHAR	Optional	Telrad unit directly assigned to the person. Nullable.
+AssignedTelrad NVARCHAR	  Optional	Telrad unit directly assigned to the person. Nullable.
 
-NearestTelrad		NVARCHAR	Optional	Nearest available Telrad unit to the person's location. 							Nullable.
+NearestTelrad		NVARCHAR	Optional	Nearest available Telrad unit to the person's location. Nullable.
 
-isMainHandler		BIT		Optional	Flag indicating whether the person is the primary handler. 1 							= True, 0 = False.
+isMainHandler		BIT		    Optional	Flag indicating whether the person is the primary handler. 1 = True, 0 = False.
 
-isActive		BIT		Optional	Flag indicating whether the Telrad is active. 1 = active, 							0 = inactive.
+isActive	      BIT		    Optional	Flag indicating whether the Telrad is active. 1 = active, 0 = inactive.
 
-Number			NVARCHAR	Optional	Contact number or reference number associated with the 								person. Nullable.
+Number			  NVARCHAR	  Optional	Contact number or reference number associated with the person. Nullable.
 
-Position		NVARCHAR	Required	Job position or title of the person. Cannot be null.
+Position		  NVARCHAR	  Required	Job position or title of the person. Cannot be null.
